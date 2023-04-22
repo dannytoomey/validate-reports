@@ -50,6 +50,11 @@ server <- function(input, output) {
     a1c_summary_stats(analysis)
   
   })
+  autoInvalidate <- reactiveTimer(50000)
+  observe({
+    autoInvalidate()
+    cat(".")
+  })
   
 }
 
