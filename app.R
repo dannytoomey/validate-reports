@@ -1,4 +1,5 @@
 library(shiny)
+library(DT)
 source("./analyses/A1cAnalysis.R")
 source("./summaries/A1cSummary.R")
 
@@ -12,7 +13,7 @@ main_page <- fluidPage(
 	  tabsetPanel(
         tabPanel(
           title = "Processed data",
-          tableOutput("data")
+          DT::dataTableOutput("data")
         ),
         tabPanel(
           title = "Summary statistics",
@@ -30,7 +31,7 @@ ui <- fluidPage(
 )
 
 server <- function(input, output) {
-  output$data <- renderTable({
+  output$data <- DT::renderDataTable({
     file <- input$csv_input
     ext <- tools::file_ext(file$datapath)
 
