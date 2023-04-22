@@ -1,5 +1,4 @@
 library(shiny)
-library(DT)
 source("./analyses/A1cAnalysis.R")
 source("./summaries/A1cSummary.R")
 
