@@ -22,7 +22,6 @@ main_page <- fluidPage(
       )
     )
   )
-  downloadButton("downloadData", "Download")
 )
 
 ui <- fluidPage(
