@@ -1,4 +1,7 @@
 library(shiny)
+install.packages('DT',repos='https://cran.rstudio.com')
+library(DT)
+
 port <- Sys.getenv('PORT')
 shiny::runApp(
   appDir = getwd(),
