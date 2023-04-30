@@ -7,7 +7,7 @@ main_page <- fluidPage(
   titlePanel("Generate change in HgA1c reports"),
   sidebarLayout(
   	sidebarPanel(
-	  fileInput("csv_input", "Upload a CSV file of the lab results report on MDR", accept = ".csv")
+	  fileInput("file_input", "Upload a CSV or XLS file of the lab results report on MDR", accept = c(".csv",".xls"))
 	),
 	mainPanel(
 	  tabsetPanel(
@@ -32,28 +32,32 @@ ui <- fluidPage(
 
 server <- function(input, output) {
   output$data <- DT::renderDataTable({
-    file <- input$csv_input
+    file <- input$file_input
     ext <- tools::file_ext(file$datapath)
 
     req(file)
-    validate(need(ext == "csv", "Please upload a csv file"))
+    validate(need(ext == "csv" || ext == "xls", "Please upload a csv or xls file"))
 
     a1c_analysis(file$datapath,0)
   
   })
   output$stats <- renderTable({
-    file <- input$csv_input
+    file <- input$file_input
     ext <- tools::file_ext(file$datapath)
     req(file)
-    validate(need(ext == "csv", "Please upload a csv file"))
+    validate(need(ext == "csv" || ext == "xls", "Please upload a csv or xls file"))
     analysis <- a1c_analysis(file$datapath,0)
     a1c_summary_stats(analysis)
   
   })
-  autoInvalidate <- reactiveTimer(50000)
+  count <- 0
+  autoInvalidate <- reactiveTimer(30000)
   observe({
-    autoInvalidate()
-    cat(".")
+    if(count <= 10){
+        autoInvalidate()
+        cat(".")
+        count <- count+1 
+    }
   })
   
 }
