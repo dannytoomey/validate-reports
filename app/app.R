@@ -2,8 +2,8 @@ library(shiny)
 library(DT)
 library(tools)
 library(readxl)
-source("./analyses/A1cAnalysis.R")
-source("./summaries/A1cSummary.R")
+source("../analyses/A1cAnalysis.R")
+source("../summaries/A1cSummary.R")
 
 main_page <- fluidPage(
   titlePanel("Generate change in HgA1c reports"),

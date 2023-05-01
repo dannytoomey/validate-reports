@@ -1,4 +1,4 @@
-source("./analyses/A1cAnalysis.R")
+source("../analyses/A1cAnalysis.R")
 
 a1c_summary_stats <- function(df){
 	n_improved <- sum(df$Change == "Improved")

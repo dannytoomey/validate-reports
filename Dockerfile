@@ -1,3 +1,3 @@
 FROM ghcr.io/virtualstaticvoid/heroku-docker-r:shiny
-ENV PORT=8080
-CMD ["/usr/bin/R", "--no-save", "--gui-none", "-f", "./run.R"]
+RUN R -e 'install.packages(c("DT","tools","readxl"))'
+CMD ["/usr/bin/R", "--no-save", "--gui-none", "-f", "./app/run.R"]
