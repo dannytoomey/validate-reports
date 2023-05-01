@@ -1,7 +1,5 @@
 library(shiny)
 library(DT)
-library(tools)
-library(readxl)
 source("../analyses/A1cAnalysis.R")
 source("../summaries/A1cSummary.R")
 

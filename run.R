@@ -1,4 +1,7 @@
 library(shiny)
+library(DT)
+library(tools)
+library(readxl)
 
 port <- Sys.getenv('PORT')
 shiny::runApp(
