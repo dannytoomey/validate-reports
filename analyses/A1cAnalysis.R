@@ -1,23 +1,15 @@
 #' Generate HgA1c analysis from MDR Lab Resulsts data
 #'
 #' @param file			A csv or xls file of the Lab Resulsts reports from MDR
+#' @param type			The type of file passed to the analysis. This is clunky and will be 
+#'						revised once I have a better understanding on module management in shiny. 
 #' @param A1cThreshold  A cutoff value to exclude patients from analysis.
 #' 						Patients whose first A1c within the given range is below this
 #' 						value will not be included in analysis. 
 #' @return 				A data frame with A1c change results. Idenitfying patient information 
 #'						is not analysed or returned. 
-library(tools)
-library(readxl)
 
-a1c_analysis <- function(file,A1cThreshold){
-	
-	if(tools::file_ext(file)=="csv"){
-		csv <- read.csv(file,head=TRUE)
-		dataframe <- csv
-	} else if(tools::file_ext(file)=="xls"){
-		xl <- data.frame(readxl::read_excel(file))
-		dataframe <- xl
-	}
+a1c_analysis <- function(dataframe,type,A1cThreshold){
 	
 	chartNums = unique(dataframe$`Chart.`)
 	A1cReport <- data.frame(matrix(ncol = 9, nrow = 0))
@@ -60,7 +52,7 @@ a1c_analysis <- function(file,A1cThreshold){
 						change <- "No change"
 					}
 					
-					if(tools::file_ext(file)=="csv"){
+					if(type=="csv"){
 						entry <- c(array[nrow(array),]$Chart_num,
 								   substr(array[nrow(array),]$DOB, nchar(array[nrow(array),]$DOB)-2+1, nchar(array[nrow(array),]$DOB)),
 								   array[nrow(array),]$Race,
@@ -71,7 +63,7 @@ a1c_analysis <- function(file,A1cThreshold){
 								   last_result_value,
 								   change
 								  )
-					} else if(tools::file_ext(file)=="xls"){
+					} else if(type=="xls"){
 						entry <- c(array[nrow(array),]$Chart_num,
 								   substring(paste0(patient$DOB[1]),1,4),
 								   array[nrow(array),]$Race,
