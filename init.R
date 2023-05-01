@@ -1,1 +1,1 @@
-helpers.installPackages("DT")
+helpers.installPackages(c("DT","tools","readxl"))
