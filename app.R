@@ -1,7 +1,7 @@
 library(shiny)
 library(DT)
 library(tools)
-library(readxl)
+library(gdata)
 source("./analyses/A1cAnalysis.R")
 source("./summaries/A1cSummary.R")
 
@@ -44,7 +44,7 @@ server <- function(input, output) {
       csv <- read.csv(file$datapath,head=TRUE)
       dataframe <- csv
     } else if(tools::file_ext(file$datapath)=="xls"){
-      xl <- data.frame(readxl::read_excel(file$datapath))
+      xl <- data.frame(gdata::read.xls(file$datapath))
       dataframe <- xl
     }
     a1c_analysis(dataframe,tools::file_ext(file$datapath),0)
@@ -60,7 +60,7 @@ server <- function(input, output) {
       csv <- read.csv(file$datapath,head=TRUE)
       dataframe <- csv
     } else if(tools::file_ext(file$datapath)=="xls"){
-      xl <- data.frame(readxl::read_excel(file$datapath))
+      xl <- data.frame(gdata::read.xls(file$datapath))
       dataframe <- xl
     }
     analysis <- a1c_analysis(dataframe,tools::file_ext(file$datapath),0)  
