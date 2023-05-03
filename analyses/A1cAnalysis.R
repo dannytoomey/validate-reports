@@ -63,7 +63,7 @@ a1c_analysis <- function(dataframe,type,A1cThreshold){
 								   last_result_value,
 								   change
 								  )
-					} else if(type=="xls"){
+					} else if(type=="xlsx"){
 						entry <- c(array[nrow(array),]$Chart_num,
 								   substring(paste0(patient$DOB[1]),1,4),
 								   array[nrow(array),]$Race,

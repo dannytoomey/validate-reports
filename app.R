@@ -1,7 +1,7 @@
 library(shiny)
 library(DT)
 library(tools)
-library(gdata)
+library(readxl)
 source("./analyses/A1cAnalysis.R")
 source("./summaries/A1cSummary.R")
 
@@ -9,7 +9,7 @@ main_page <- fluidPage(
   titlePanel("Generate change in HgA1c reports"),
   sidebarLayout(
   	sidebarPanel(
-	  fileInput("file_input", "Upload a CSV or XLS file of the lab results report on MDR", accept = c(".csv",".xls"))
+	  fileInput("file_input", "Upload a CSV or XLSX file of the lab results report on MDR", accept = c(".csv",".xlsx"))
 	),
 	mainPanel(
 	  tabsetPanel(
@@ -38,13 +38,13 @@ server <- function(input, output) {
     ext <- tools::file_ext(file$datapath)
 
     req(file)
-    validate(need(ext == "csv" || ext == "xls", "Please upload a csv or xls file"))
+    validate(need(ext == "csv" || ext == "xlsx", "Please upload a csv or xlsx file"))
 
     if(tools::file_ext(file$datapath)=="csv"){
       csv <- read.csv(file$datapath,head=TRUE)
       dataframe <- csv
-    } else if(tools::file_ext(file$datapath)=="xls"){
-      xl <- data.frame(gdata::read.xls(file$datapath))
+    } else if(tools::file_ext(file$datapath)=="xlsx"){
+      xl <- data.frame(readxl::read_excel(file$datapath))
       dataframe <- xl
     }
     a1c_analysis(dataframe,tools::file_ext(file$datapath),0)
@@ -54,13 +54,13 @@ server <- function(input, output) {
     file <- input$file_input
     ext <- tools::file_ext(file$datapath)
     req(file)
-    validate(need(ext == "csv" || ext == "xls", "Please upload a csv or xls file"))
+    validate(need(ext == "csv" || ext == "xlsx", "Please upload a csv or xlsx file"))
     
     if(tools::file_ext(file$datapath)=="csv"){
       csv <- read.csv(file$datapath,head=TRUE)
       dataframe <- csv
-    } else if(tools::file_ext(file$datapath)=="xls"){
-      xl <- data.frame(gdata::read.xls(file$datapath))
+    } else if(tools::file_ext(file$datapath)=="xlsx"){
+      xl <- data.frame(readxl::read_excel(file$datapath))
       dataframe <- xl
     }
     analysis <- a1c_analysis(dataframe,tools::file_ext(file$datapath),0)  
