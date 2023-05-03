@@ -64,6 +64,8 @@ a1c_analysis <- function(dataframe,type,A1cThreshold){
 								   change
 								  )
 					} else if(type=="xlsx"){
+						first_result_date <- substring(first_result_date,1,10)
+						last_result_date <- substring(last_result_date,1,10)
 						entry <- c(array[nrow(array),]$Chart_num,
 								   substring(paste0(patient$DOB[1]),1,4),
 								   array[nrow(array),]$Race,
