@@ -1,1 +1,1 @@
-helpers.installPackages(c("DT","tools","gdata"))
+helpers.installPackages(c("DT","tools","readxl"))
