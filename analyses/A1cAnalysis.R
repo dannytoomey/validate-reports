@@ -77,7 +77,8 @@ a1c_analysis <- function(dataframe,type,A1cThreshold,A1cFinalValue){
 								   first_result_value,
 								   last_result_date,
 								   last_result_value,
-								   change
+								   change,
+								   final_result_below_threshold
 								  )
 					} else if(type=="xlsx"){
 						first_result_date <- substring(first_result_date,1,10)
