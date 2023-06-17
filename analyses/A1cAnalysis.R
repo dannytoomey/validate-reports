@@ -20,6 +20,9 @@ a1c_analysis <- function(dataframe,type,A1cThreshold,A1cFinalValue){
 	if(is.na(A1cFinalValue)){
 		stop("Please input a value for final A1c value.")
 	}
+	if(FALSE %in% (c("Chart.","DOB","Race","Ethnicity","Result.Date","Result.Value") %in% colnames(dataframe))){
+		stop("The column names in the uploaded file do not match the expected column names for this MDR output. Please check that the correct report is uploaded.")
+	}
 	
 	chartNums = unique(dataframe$`Chart.`)
 	A1cReport <- data.frame(matrix(ncol = 10, nrow = 0))

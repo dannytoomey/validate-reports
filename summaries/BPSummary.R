@@ -1,4 +1,4 @@
-a1c_summary_stats <- function(df,finalValue){
+bp_summary_stats <- function(df,finalValue){
 	n_imp_below_thres <-  sum(df$Change == "Improved" & df$Final_result_below_threshold == "Yes")
 	n_improved <- sum(df$Change == "Improved")
 	n_no_change <- sum(df$Change == "No change")
