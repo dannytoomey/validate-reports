@@ -10,6 +10,11 @@
 #' @return 				A data frame with BP change results. Idenitfying patient information 
 #'						is not analysed or returned. 
 
+quantile_df <- function(x, probs, na.rm =F, names = F, type = 7, ...){
+  z <- quantile(x, probs, na.rm, names, type)
+  return(data.frame(id = probs, values = z))
+}
+
 bp_analysis <- function(dataframe,type,BPThreshold,BPFinalValue){
 
 	BPThreshold <- as.numeric(BPThreshold)
@@ -27,7 +32,7 @@ bp_analysis <- function(dataframe,type,BPThreshold,BPFinalValue){
 	chartNums = unique(dataframe$`Chart.`)
 	BPReport <- data.frame(matrix(ncol = 10, nrow = 0))
 	colnames(BPReport) <- c('Chart_num','Birth_Year','First_Result_Date','First_Result_Systolic','First_Result_Diastolic','Last_Result_Date','Last_Result_Systolic','Last_Result_Diastolic','Change','Final_result_below_threshold')
-
+	
 	for(chart in chartNums){
 		patient = dataframe[dataframe$`Chart.`==chart,]
 		results = c(patient$`Chart.`,patient$DOB,patient$Visit.Date,patient$Systolic,patient$Diastolic)
@@ -79,10 +84,15 @@ bp_analysis <- function(dataframe,type,BPThreshold,BPFinalValue){
 					if(last_result_systolic>=BPFinalValue){
 						final_result_below_threshold <- "No"
 					}
-					
+
 					if(type=="csv"){
+						if(as.numeric(substr(array[nrow(array),]$DOB, nchar(array[nrow(array),]$DOB)-2+1, nchar(array[nrow(array),]$DOB)))<=23){
+							age <- as.numeric(substr(array[nrow(array),]$DOB, nchar(array[nrow(array),]$DOB)-2+1, nchar(array[nrow(array),]$DOB)))+2000
+						} else {
+							age <- as.numeric(substr(array[nrow(array),]$DOB, nchar(array[nrow(array),]$DOB)-2+1, nchar(array[nrow(array),]$DOB)))+1900
+						}
 						entry <- c(array[nrow(array),]$Chart_num,
-								   substr(array[nrow(array),]$DOB, nchar(array[nrow(array),]$DOB)-2+1, nchar(array[nrow(array),]$DOB)),
+								   age,
 								   first_result_date,
 								   first_result_systolic,
 								   first_result_diastolic,
