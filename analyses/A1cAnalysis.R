@@ -20,19 +20,19 @@ a1c_analysis <- function(dataframe,type,A1cThreshold,A1cFinalValue){
 	if(is.na(A1cFinalValue)){
 		stop("Please input a value for final A1c value.")
 	}
-	if(FALSE %in% (c("Chart.","DOB","Race","Ethnicity","Result.Date","Result.Value") %in% colnames(dataframe))){
+	if(FALSE %in% (c("Chart.","DOB","Gender","Race","Ethnicity","Result.Date","Result.Value") %in% colnames(dataframe))){
 		stop("The column names in the uploaded file do not match the expected column names for this MDR output. Please check that the correct report is uploaded.")
 	}
 	
 	chartNums = unique(dataframe$`Chart.`)
-	A1cReport <- data.frame(matrix(ncol = 10, nrow = 0))
-	colnames(A1cReport) <- c('Chart_num','Birth_Year','Race','Ethnicity','First_Result_Date','First_Result_Value','Last_Result_Date','Last_Result_Value','Change','Final_result_below_threshold')
+	A1cReport <- data.frame(matrix(ncol = 11, nrow = 0))
+	colnames(A1cReport) <- c('Chart_num','Birth_Year','Gender','Race','Ethnicity','First_Result_Date','First_Result_Value','Last_Result_Date','Last_Result_Value','Change','Final_result_below_threshold')
 
 	for(chart in chartNums){
 		patient = dataframe[dataframe$`Chart.`==chart,]
-		results = c(patient$`Chart.`,patient$DOB,patient$Race,patient$Ethnicity,patient$Result.Date,patient$Result.Value)
-		array <- data.frame(matrix(ncol = 7, nrow = 0))
-		colnames(array) <- c('Chart_num','DOB','Race','Ethnicity','Result.Date','Result.Value')
+		results = c(patient$`Chart.`,patient$DOB,patient$Gender,patient$Race,patient$Ethnicity,patient$Result.Date,patient$Result.Value)
+		array <- data.frame(matrix(ncol = 8, nrow = 0))
+		colnames(array) <- c('Chart_num','DOB','Gender','Race','Ethnicity','Result.Date','Result.Value')
 		if(length(patient$`Chart.`)>1){
 			for(visit in 1:length(patient$`Chart.`)){
 				extract <- c(visit,
@@ -41,7 +41,8 @@ a1c_analysis <- function(dataframe,type,A1cThreshold,A1cFinalValue){
 							 visit+length(patient$`Chart.`)*3,
 							 visit+length(patient$`Chart.`)*4,
 							 visit+length(patient$`Chart.`)*5,
-							 visit+length(patient$`Chart.`)*6
+							 visit+length(patient$`Chart.`)*6,
+							 visit+length(patient$`Chart.`)*7
 							)
 				array[nrow(array)+1,] <- c(results[extract])
 				if(array[nrow(array),]$Result.Value==">14.0"){
@@ -72,8 +73,15 @@ a1c_analysis <- function(dataframe,type,A1cThreshold,A1cFinalValue){
 					}
 					
 					if(type=="csv"){
+						if(as.numeric(substr(array[nrow(array),]$DOB, nchar(array[nrow(array),]$DOB)-2+1, nchar(array[nrow(array),]$DOB)))<=23){
+							age <- as.numeric(substr(array[nrow(array),]$DOB, nchar(array[nrow(array),]$DOB)-2+1, nchar(array[nrow(array),]$DOB)))+2000
+						} else {
+							age <- as.numeric(substr(array[nrow(array),]$DOB, nchar(array[nrow(array),]$DOB)-2+1, nchar(array[nrow(array),]$DOB)))+1900
+						}
+
 						entry <- c(array[nrow(array),]$Chart_num,
-								   substr(array[nrow(array),]$DOB, nchar(array[nrow(array),]$DOB)-2+1, nchar(array[nrow(array),]$DOB)),
+								   age,
+								   array[nrow(array),]$Gender,
 								   array[nrow(array),]$Race,
 								   array[nrow(array),]$Ethnicity,
 								   first_result_date,
@@ -88,6 +96,7 @@ a1c_analysis <- function(dataframe,type,A1cThreshold,A1cFinalValue){
 						last_result_date <- substring(last_result_date,1,10)
 						entry <- c(array[nrow(array),]$Chart_num,
 								   substring(paste0(patient$DOB[1]),1,4),
+								   array[nrow(array),]$Gender,
 								   array[nrow(array),]$Race,
 								   array[nrow(array),]$Ethnicity,
 								   first_result_date,
