@@ -9,8 +9,10 @@ library(esc)
 library(grid)
 source("./analyses/A1cAnalysis.R")
 source("./analyses/BPAnalysis.R")
+source("./analyses/HLDAnalysis.R")
 source("./summaries/A1cSummary.R")
 source("./summaries/BPSummary.R")
+source("./summaries/HLDSummary.R")
 
 main_page <- div(
   fluidPage(
@@ -24,9 +26,9 @@ a1c_report <- div(
     sidebarLayout(
       sidebarPanel(
       fileInput("a1c_file_input", "Upload a CSV or XLSX file of the HgA1c lab results report on MDR", accept = c(".csv",".xlsx")),
-      textInput("a1c_thres","Enter a minimum initial A1c to include in analysis",value="0"),
+      textInput("a1c_thres","Enter a minimum initial A1c to include in analysis",value="5"),
       textInput("a1c_final","Enter a final A1c value to include in analysis",value="7"),
-      selectInput("group_select", "Select a variable to use for plotting", choices = c("Age","Gender")),
+      selectInput("a1c_group_select", "Select a variable to use for plotting", choices = c("Age","Gender")),
       downloadButton('download_a1c_data', 'Download data')
     ),
     mainPanel(
@@ -57,7 +59,7 @@ fluidPage(
       fileInput("bp_file_input", "Upload a CSV or XLSX file of the blood pressure report on MDR", accept = c(".csv",".xlsx")),
       textInput("bp_thres","Enter a minimum initial systolic BP to include in analysis",value="100"),
       textInput("bp_final","Enter a final systolic BP to include in analysis",value="130"),
-      selectInput("group_select", "Select a variable to use for plotting", choices = c("Age")),
+      selectInput("bp_group_select", "Select a variable to use for plotting", choices = c("Age")),
       downloadButton('download_bp_data', 'Download data')
     ),
     mainPanel(
@@ -80,11 +82,44 @@ fluidPage(
   )
 )
 
+hld_report <- div(
+fluidPage(
+    titlePanel("Generate change in cholesterol reports"),
+    sidebarLayout(
+      sidebarPanel(
+      fileInput("hld_file_input", "Upload a CSV or XLSX file of the LDL cholesterol report on MDR", accept = c(".csv",".xlsx")),
+      textInput("hld_thres","Enter a minimum initial LDL level to include in analysis",value="100"),
+      textInput("hld_final","Enter a final LDL level to include in analysis",value="150"),
+      selectInput("hld_group_select", "Select a variable to use for plotting", choices = c("Age","Gender")),
+      downloadButton('download_hld_data', 'Download data')
+    ),
+    mainPanel(
+      tabsetPanel(
+        tabPanel(
+            title = "Summary statistics",
+            tableOutput("hld_stats")
+          ),
+          tabPanel(
+            title = "Plots",
+            plotOutput("hld_plot")
+          ),
+          tabPanel(
+            title = "Processed data",
+            DT::dataTableOutput("hld_data")
+          )
+        )
+      )
+    )
+  )
+)
+
 get_data <-function(input,file_input,page){
   a1c_thres <- input$a1c_thres
   a1c_final <- input$a1c_final    
   bp_thres <- input$bp_thres
   bp_final <- input$bp_final
+  hld_thres <- input$hld_thres
+  hld_final <- input$hld_final
   ext <- tools::file_ext(file_input$datapath)
   req(file_input)
   validate(need(ext == "csv" || ext == "xlsx", "Please upload a csv or xlsx file"))
@@ -101,13 +136,17 @@ get_data <-function(input,file_input,page){
   if(page=="bp_report"){
       data <- bp_analysis(dataframe,ext,bp_thres,bp_final)
   }
+  if(page=="hld_report"){
+      data <- hld_analysis(dataframe,ext,hld_thres,hld_final)
+  }
   return(data)
 }
 
 menu <- tags$ul(
   tags$li(a(class="item", href = route_link("/"), "Select an analysis")),
   tags$li(a(class="item", href = route_link("a1c_report"), "HgA1c reports")),
-  tags$li(a(class="item", href = route_link("bp_report"), "Blood pressure reports"))
+  tags$li(a(class="item", href = route_link("bp_report"), "Blood pressure reports")),
+  tags$li(a(class="item", href = route_link("hld_report"), "LDL cholesterol reports"))
 )
 
 ui <- fluidPage(
@@ -116,7 +155,8 @@ ui <- fluidPage(
   router_ui(
     route("/", main_page),
     route("a1c_report", a1c_report),
-    route("bp_report", bp_report)
+    route("bp_report", bp_report),
+    route("hld_report", hld_report)
   )
 )
 
@@ -183,7 +223,7 @@ server <- function(input, output, session) {
         analysis <- get_data(input,file_input,page)
         esc_array <- list()
         i<-1
-        if(input$group_select=="Gender"){
+        if(input$a1c_group_select=="Gender"){
           for(group in unique(analysis$Gender)){
             esc_array[[i]] <- get_esc(analysis,group,"gender")
             i <- i+1
@@ -198,7 +238,7 @@ server <- function(input, output, session) {
                            )
           grid::grid.text("Odds of reducing A1c by Gender", x=0.5,y=0.85, gp=gpar(fontsize=18))
         }
-        if(input$group_select=="Age"){
+        if(input$a1c_group_select=="Age"){
           age_quants <- quantile(as.numeric(analysis$Birth_Year),probs=c(0,0.25,0.5,0.75,1))
           age_quant_num <- vector()
           for(chart in analysis$Chart_num){
@@ -257,7 +297,7 @@ server <- function(input, output, session) {
         analysis <- get_data(input,file_input,page)
         esc_array <- list()
         i<-1
-        if(input$group_select=="Age"){
+        if(input$bp_group_select=="Age"){
           age_quants <- quantile(as.numeric(analysis$Birth_Year),probs=c(0,0.25,0.5,0.75,1))
           age_quant_num <- vector()
           for(chart in analysis$Chart_num){
@@ -297,6 +337,80 @@ server <- function(input, output, session) {
              height=400)
       },deleteFile = TRUE)
     }
+    if(page=="hld_report"){
+      file_input <- input$hld_file_input
+      output$hld_data <- DT::renderDataTable({
+        page <- shiny.router::get_page()
+        get_data(input,file_input,page)
+      })
+      output$hld_stats <- renderTable({
+        analysis <- get_data(input,file_input,page)
+        hld_summary_stats(analysis,input$hld_final)
+      })
+      output$hld_plot <- renderImage({
+        outfile <- tempfile(fileext = '.png')
+        png(outfile, 
+          width = 5500, 
+          height = 3500,
+          res = 50*10)
+        analysis <- get_data(input,file_input,page)
+        esc_array <- list()
+        i<-1
+        if(input$hld_group_select=="Gender"){
+          for(group in unique(analysis$Gender)){
+            esc_array[[i]] <- get_esc(analysis,group,"gender")
+            i <- i+1
+          }
+          combined_es <- esc::combine_esc(esc_array[1],esc_array[2])
+          meta <- do_meta_es(combined_es,"Gender and odds of improving LDL cholesterol")
+          meta::forest.meta(meta,
+                            sortvar = TE,
+                            print.tau2 = FALSE,
+                            leftlabs = c("Gender", "g", "SE"),
+                            fontsize=16
+                           )
+          grid::grid.text("Odds of reducing LDL cholesterol by Gender", x=0.5,y=0.85, gp=gpar(fontsize=18))
+        }
+        if(input$hld_group_select=="Age"){
+          age_quants <- quantile(as.numeric(analysis$Birth_Year),probs=c(0,0.25,0.5,0.75,1))
+          age_quant_num <- vector()
+          for(chart in analysis$Chart_num){
+            this_chart <- analysis[analysis$Chart_num==chart,]
+            if(age_quants[[1]] < as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[2]]){
+              x <- 1
+            }
+            if(age_quants[[2]] < as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[3]]){
+              x <- 2
+            }
+            if(age_quants[[3]] < as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[4]]){
+              x <- 3
+            }
+            if(age_quants[[4]] < as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[5]]){
+              x <- 4
+            }
+            age_quant_num <- c(age_quant_num,paste0("Age quantile ",x," - ",age_quants[[x]], " to ",age_quants[[x+1]],""))
+          }
+          analysis$age_quant_num <- age_quant_num
+          for(group in unique(analysis$age_quant_num)){
+            esc_array[[i]] <- get_esc(analysis,group,"age")
+            i <- i+1
+          }
+          combined_es <- esc::combine_esc(esc_array[1],esc_array[2],esc_array[3],esc_array[4])
+          meta <- do_meta_es(combined_es,"Age and odds of improving LDL cholesterol")
+          meta::forest.meta(meta,
+                            sortvar = TE,
+                            print.tau2 = FALSE,
+                            leftlabs = c("Age", "g", "SE"),
+                            fontsize=16
+                           )
+          grid::grid.text("Odds of reducing LDL cholesterol by Age", x=0.5,y=0.85, gp=gpar(fontsize=18))
+        }
+        dev.off()
+        list(src = outfile,
+             width=600,
+             height=400)
+      },deleteFile = TRUE)
+    }
   })
   
   observe({
@@ -317,6 +431,17 @@ server <- function(input, output, session) {
       output$download_bp_data <- downloadHandler(
         filename = function() {
           paste("BP-data-", Sys.Date(), ".csv", sep="")
+        },
+        content = function(file) {
+          write.csv(get_data(input,file_input,page), file)
+        }
+      )
+    }
+    if(page=="hld_report"){
+      file_input <- input$hld_file_input
+      output$download_hld_data <- downloadHandler(
+        filename = function() {
+          paste("HLD-data-", Sys.Date(), ".csv", sep="")
         },
         content = function(file) {
           write.csv(get_data(input,file_input,page), file)
