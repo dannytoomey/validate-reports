@@ -69,50 +69,101 @@ bp_analysis <- function(dataframe,type,BPThreshold,BPFinalValue){
 						last_result_systolic <- d2s
 					}
 
-					if(first_result_systolic>last_result_systolic){
-						change <- "Improved"
-					}
-					if(first_result_systolic<last_result_systolic){
-						change <- "Not improved"
-					}
-					if(first_result_systolic==last_result_systolic){
-						change <- "No change"
-					}
-					if(last_result_systolic<BPFinalValue){
-						final_result_below_threshold <- "Yes"
-					}
-					if(last_result_systolic>=BPFinalValue){
-						final_result_below_threshold <- "No"
-					}
-
 					if(type=="csv"){
 						if(as.numeric(substr(array[nrow(array),]$DOB, nchar(array[nrow(array),]$DOB)-2+1, nchar(array[nrow(array),]$DOB)))<=23){
 							age <- as.numeric(substr(array[nrow(array),]$DOB, nchar(array[nrow(array),]$DOB)-2+1, nchar(array[nrow(array),]$DOB)))+2000
 						} else {
 							age <- as.numeric(substr(array[nrow(array),]$DOB, nchar(array[nrow(array),]$DOB)-2+1, nchar(array[nrow(array),]$DOB)))+1900
 						}
+						#print(first_result_date)
+						date_1 <- as.Date(first_result_date,format="%m/%d/%Y")
+						date_2 <- as.Date(last_result_date,format="%m/%d/%Y")
+						if(date_1>date_2){
+							frda_store <- last_result_date
+							frsy_store <- last_result_systolic
+							frdy_store <- last_result_diastolic
+							lrda_store <- first_result_date
+							lrsy_store <- first_result_systolic
+							lrdy_store <- first_result_diastolic
+						} else {
+							lrda_store <- last_result_date
+							lrsy_store <- last_result_systolic
+							lrdy_store <- last_result_diastolic
+							frda_store <- first_result_date
+							frsy_store <- first_result_systolic
+							frdy_store <- first_result_diastolic
+						}
+
+						if(frsy_store>lrsy_store){
+							change <- "Improved"
+						}
+						if(frsy_store<lrsy_store){
+							change <- "Not improved"
+						}
+						if(frsy_store==lrsy_store){
+							change <- "No change"
+						}
+						if(lrsy_store<BPFinalValue){
+							final_result_below_threshold <- "Yes"
+						}
+						if(lrsy_store>=BPFinalValue){
+							final_result_below_threshold <- "No"
+						}
 						entry <- c(array[nrow(array),]$Chart_num,
 								   age,
-								   first_result_date,
-								   first_result_systolic,
-								   first_result_diastolic,
-								   last_result_date,
-								   last_result_systolic,
-								   last_result_diastolic,
+								   frda_store,
+								   frsy_store,
+								   frdy_store,
+								   lrda_store,
+								   lrsy_store,
+								   lrdy_store,
 								   change,
 								   final_result_below_threshold
 								  )
 					} else if(type=="xlsx"){
 						first_result_date <- substring(first_result_date,1,10)
 						last_result_date <- substring(last_result_date,1,10)
+						date_1 <- as.Date(first_result_date,format="%Y-%m-%d")
+						date_2 <- as.Date(last_result_date,format="%Y-%m-%d")
+						if(date_1>date_2){
+							frda_store <- last_result_date
+							frsy_store <- last_result_systolic
+							frdy_store <- last_result_diastolic
+							lrda_store <- first_result_date
+							lrsy_store <- first_result_systolic
+							lrdy_store <- first_result_diastolic
+						} else {
+							lrda_store <- last_result_date
+							lrsy_store <- last_result_systolic
+							lrdy_store <- last_result_diastolic
+							frda_store <- first_result_date
+							frsy_store <- first_result_systolic
+							frdy_store <- first_result_diastolic
+						}
+
+						if(frsy_store>lrsy_store){
+							change <- "Improved"
+						}
+						if(frsy_store<lrsy_store){
+							change <- "Not improved"
+						}
+						if(frsy_store==lrsy_store){
+							change <- "No change"
+						}
+						if(lrsy_store<BPFinalValue){
+							final_result_below_threshold <- "Yes"
+						}
+						if(lrsy_store>=BPFinalValue){
+							final_result_below_threshold <- "No"
+						}
 						entry <- c(array[nrow(array),]$Chart_num,
 								   substring(paste0(patient$DOB[1]),1,4),
-								   first_result_date,
-								   first_result_systolic,
-								   first_result_diastolic,
-								   last_result_date,
-								   last_result_systolic,
-								   last_result_diastolic,
+								   frda_store,
+								   frsy_store,
+								   frdy_store,
+								   lrda_store,
+								   lrsy_store,
+								   lrdy_store,
 								   change,
 								   final_result_below_threshold
 								  )
