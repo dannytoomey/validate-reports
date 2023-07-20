@@ -1,1 +1,1 @@
-helpers.installPackages(c("DT","tools","readxl","shiny.router","metafor","meta","esc","grid"))
+helpers.installPackages(c("DT","tools","readxl","metafor","meta","esc","grid"))
