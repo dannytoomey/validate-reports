@@ -2,7 +2,6 @@ library(shiny)
 library(DT)
 library(tools)
 library(readxl)
-library(shiny.router)
 library(metafor)
 library(meta)
 library(esc)
@@ -14,99 +13,90 @@ source("./summaries/A1cSummary.R")
 source("./summaries/BPSummary.R")
 source("./summaries/HLDSummary.R")
 
-main_page <- div(
-  fluidPage(
-    titlePanel("Select an analysis from the list above.")
-  )
-)
-
-a1c_report <- div(
-  fluidPage(
-    titlePanel("Generate change in HgA1c reports"),
-    sidebarLayout(
-      sidebarPanel(
-      fileInput("a1c_file_input", "Upload a CSV or XLSX file of the HgA1c lab results report on MDR", accept = c(".csv",".xlsx")),
-      textInput("a1c_thres","Enter a minimum initial A1c to include in analysis",value="5"),
-      textInput("a1c_final","Enter a final A1c value to include in analysis",value="7"),
-      selectInput("a1c_group_select", "Select a variable to use for plotting", choices = c("Age","Gender")),
-      downloadButton('download_a1c_data', 'Download data')
-    ),
-    mainPanel(
-      tabsetPanel(
+a1c_report <- tabPanel(
+  title="HgA1c Analysis",
+  titlePanel("Generate change in HgA1c reports"),
+  sidebarLayout(
+    sidebarPanel(
+    fileInput("a1c_file_input", "Upload a CSV or XLSX file of the HgA1c lab results report on MDR", accept = c(".csv",".xlsx")),
+    textInput("a1c_thres","Enter a minimum initial A1c to include in analysis",value="5"),
+    textInput("a1c_final","Enter a final A1c value to include in analysis",value="7"),
+    selectInput("a1c_group_select", "Select a variable to use for plotting", choices = c("Age","Gender")),
+    downloadButton('download_a1c_data', 'Download data')
+  ),
+  mainPanel(
+    tabsetPanel(
+      tabPanel(
+          title = "Summary statistics",
+          tableOutput("a1c_stats")
+        ),
         tabPanel(
-            title = "Summary statistics",
-            tableOutput("a1c_stats")
-          ),
-          tabPanel(
-            title = "Plots",
-            plotOutput("a1c_plot")
-          ),
-          tabPanel(
-            title = "Processed data",
-            DT::dataTableOutput("a1c_data")
-          )
+          title = "Plots",
+          plotOutput("a1c_plot")
+        ),
+        tabPanel(
+          title = "Processed data",
+          DT::dataTableOutput("a1c_data")
         )
       )
     )
   )
 )
 
-bp_report <- div(
-fluidPage(
-    titlePanel("Generate change in blood pressure reports"),
-    sidebarLayout(
-      sidebarPanel(
-      fileInput("bp_file_input", "Upload a CSV or XLSX file of the blood pressure report on MDR", accept = c(".csv",".xlsx")),
-      textInput("bp_thres","Enter a minimum initial systolic BP to include in analysis",value="100"),
-      textInput("bp_final","Enter a final systolic BP to include in analysis",value="130"),
-      selectInput("bp_group_select", "Select a variable to use for plotting", choices = c("Age")),
-      downloadButton('download_bp_data', 'Download data')
-    ),
-    mainPanel(
-      tabsetPanel(
+bp_report <- tabPanel(
+  title="Blood Pressure Analysis",
+  titlePanel("Generate change in blood pressure reports"),
+  sidebarLayout(
+    sidebarPanel(
+    fileInput("bp_file_input", "Upload a CSV or XLSX file of the blood pressure report on MDR", accept = c(".csv",".xlsx")),
+    textInput("bp_thres","Enter a minimum initial systolic BP to include in analysis",value="100"),
+    textInput("bp_final","Enter a final systolic BP to include in analysis",value="130"),
+    selectInput("bp_group_select", "Select a variable to use for plotting", choices = c("Age")),
+    downloadButton('download_bp_data', 'Download data')
+  ),
+  mainPanel(
+    tabsetPanel(
+      tabPanel(
+          title = "Summary statistics",
+          tableOutput("bp_stats")
+        ),
         tabPanel(
-            title = "Summary statistics",
-            tableOutput("bp_stats")
-          ),
-          tabPanel(
-            title = "Plots",
-            plotOutput("bp_plot")
-          ),
-          tabPanel(
-            title = "Processed data",
-            DT::dataTableOutput("bp_data")
-          )
+          title = "Plots",
+          plotOutput("bp_plot")
+        ),
+        tabPanel(
+          title = "Processed data",
+          DT::dataTableOutput("bp_data")
         )
       )
     )
   )
 )
 
-hld_report <- div(
-fluidPage(
-    titlePanel("Generate change in cholesterol reports"),
-    sidebarLayout(
-      sidebarPanel(
-      fileInput("hld_file_input", "Upload a CSV or XLSX file of the LDL cholesterol report on MDR", accept = c(".csv",".xlsx")),
-      textInput("hld_thres","Enter a minimum initial LDL level to include in analysis",value="75"),
-      textInput("hld_final","Enter a final LDL level to include in analysis",value="125"),
-      selectInput("hld_group_select", "Select a variable to use for plotting", choices = c("Age","Gender")),
-      downloadButton('download_hld_data', 'Download data')
-    ),
-    mainPanel(
-      tabsetPanel(
+hld_report <- tabPanel(
+  title = "LDL Analysis",
+  titlePanel("Generate change in cholesterol reports"),
+  sidebarLayout(
+    sidebarPanel(
+    fileInput("hld_file_input", "Upload a CSV or XLSX file of the LDL cholesterol report on MDR", accept = c(".csv",".xlsx")),
+    textInput("hld_thres","Enter a minimum initial LDL level to include in analysis",value="75"),
+    textInput("hld_final","Enter a final LDL level to include in analysis",value="125"),
+    selectInput("hld_group_select", "Select a variable to use for plotting", choices = c("Age","Gender")),
+    downloadButton('download_hld_data', 'Download data')
+  ),
+  mainPanel(
+    tabsetPanel(
+      tabPanel(
+          title = "Summary statistics",
+          tableOutput("hld_stats")
+        ),
         tabPanel(
-            title = "Summary statistics",
-            tableOutput("hld_stats")
-          ),
-          tabPanel(
-            title = "Plots",
-            plotOutput("hld_plot")
-          ),
-          tabPanel(
-            title = "Processed data",
-            DT::dataTableOutput("hld_data")
-          )
+          title = "Plots",
+          plotOutput("hld_plot")
+        ),
+        tabPanel(
+          title = "Processed data",
+          DT::dataTableOutput("hld_data")
         )
       )
     )
@@ -130,34 +120,24 @@ get_data <-function(input,file_input,page){
     xl <- data.frame(readxl::read_excel(file_input$datapath))
     dataframe <- xl
   }
-  if(page=="a1c_report"){
+  if(page=="HgA1c Analysis"){
       data <- a1c_analysis(dataframe,ext,a1c_thres,a1c_final)
   }
-  if(page=="bp_report"){
+  if(page=="Blood Pressure Analysis"){
       data <- bp_analysis(dataframe,ext,bp_thres,bp_final)
   }
-  if(page=="hld_report"){
+  if(page=="LDL Analysis"){
       data <- hld_analysis(dataframe,ext,hld_thres,hld_final)
   }
   return(data)
 }
 
-menu <- tags$ul(
-  tags$li(a(class="item", href = route_link("/"), "Select an analysis")),
-  tags$li(a(class="item", href = route_link("a1c_report"), "HgA1c reports")),
-  tags$li(a(class="item", href = route_link("bp_report"), "Blood pressure reports")),
-  tags$li(a(class="item", href = route_link("hld_report"), "LDL cholesterol reports"))
-)
-
-ui <- fluidPage(
-  menu,
-  tags$hr(),
-  router_ui(
-    route("/", main_page),
-    route("a1c_report", a1c_report),
-    route("bp_report", bp_report),
-    route("hld_report", hld_report)
-  )
+ui <- navbarPage(
+  title = "Select an analysis:",
+  id = "navbarid",
+  a1c_report,
+  bp_report,
+  hld_report
 )
 
 get_odds_gender <- function(data,group){
@@ -200,14 +180,11 @@ do_meta_es <- function(combined_es,title){
 }
 
 server <- function(input, output, session) {
-  router_server()
-
   observe({
-    page <- shiny.router::get_page()
-    if(page=="a1c_report"){
+    page <- input$navbarid 
+    if(page=="HgA1c Analysis"){
       file_input <- input$a1c_file_input
       output$a1c_data <- DT::renderDataTable({
-        page <- shiny.router::get_page()
         get_data(input,file_input,page)
       })
       output$a1c_stats <- renderTable({
@@ -278,10 +255,9 @@ server <- function(input, output, session) {
              height=400)
       },deleteFile = TRUE)
     }
-    if(page=="bp_report"){
+    if(page=="Blood Pressure Analysis"){
       file_input <- input$bp_file_input
       output$bp_data <- DT::renderDataTable({
-        page <- shiny.router::get_page()
         get_data(input,file_input,page)
       })
       output$bp_stats <- renderTable({
@@ -337,10 +313,9 @@ server <- function(input, output, session) {
              height=400)
       },deleteFile = TRUE)
     }
-    if(page=="hld_report"){
+    if(page=="LDL Analysis"){
       file_input <- input$hld_file_input
       output$hld_data <- DT::renderDataTable({
-        page <- shiny.router::get_page()
         get_data(input,file_input,page)
       })
       output$hld_stats <- renderTable({
@@ -414,8 +389,8 @@ server <- function(input, output, session) {
   })
   
   observe({
-    page <- shiny.router::get_page()
-    if(page=="a1c_report"){
+    page <- input$navbarid 
+    if(page=="HgA1c Analysis"){
       file_input <- input$a1c_file_input
       output$download_a1c_data <- downloadHandler(
         filename = function() {
@@ -426,7 +401,7 @@ server <- function(input, output, session) {
         }
       )
     }
-    if(page=="bp_report"){
+    if(page=="Blood Pressure Analysis"){
       file_input <- input$bp_file_input
       output$download_bp_data <- downloadHandler(
         filename = function() {
@@ -437,7 +412,7 @@ server <- function(input, output, session) {
         }
       )
     }
-    if(page=="hld_report"){
+    if(page=="LDL Analysis"){
       file_input <- input$hld_file_input
       output$download_hld_data <- downloadHandler(
         filename = function() {
