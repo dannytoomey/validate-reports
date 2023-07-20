@@ -389,7 +389,7 @@ server <- function(input, output, session) {
   })
   
   observe({
-    page <- input$navbarid #shiny.router::get_page()
+    page <- input$navbarid 
     if(page=="HgA1c Analysis"){
       file_input <- input$a1c_file_input
       output$download_a1c_data <- downloadHandler(
