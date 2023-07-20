@@ -45,9 +45,6 @@ hld_analysis <- function(dataframe,type,HLDThreshold,HLDFinalValue){
 							 visit+length(patient$`Chart.`)*7
 							)
 				array[nrow(array)+1,] <- c(results[extract])
-				if(array[nrow(array),]$Result.Value==">14.0"){
-					array[nrow(array),]$Result.Value <- 14.0
-				}
 				if(visit==1){
 					first_result_date <- paste0(patient$Result.Date[1])
 					first_result_value <- as.numeric(array[nrow(array),]$Result.Value)
@@ -71,6 +68,7 @@ hld_analysis <- function(dataframe,type,HLDThreshold,HLDFinalValue){
 					if(last_result_value>=HLDFinalValue){
 						final_result_below_threshold <- "No"
 					}
+
 					
 					if(type=="csv"){
 						if(as.numeric(substr(array[nrow(array),]$DOB, nchar(array[nrow(array),]$DOB)-2+1, nchar(array[nrow(array),]$DOB)))<=23){
@@ -79,37 +77,45 @@ hld_analysis <- function(dataframe,type,HLDThreshold,HLDFinalValue){
 							age <- as.numeric(substr(array[nrow(array),]$DOB, nchar(array[nrow(array),]$DOB)-2+1, nchar(array[nrow(array),]$DOB)))+1900
 						}
 
-						entry <- c(array[nrow(array),]$Chart_num,
-								   age,
-								   array[nrow(array),]$Gender,
-								   array[nrow(array),]$Race,
-								   array[nrow(array),]$Ethnicity,
-								   first_result_date,
-								   first_result_value,
-								   last_result_date,
-								   last_result_value,
-								   change,
-								   final_result_below_threshold
-								  )
+						date_1 <- as.Date(first_result_date,format="%m/%d/%Y %H:%M")
+						date_2 <- as.Date(last_result_date,format="%m/%d/%Y %H:%M")
+						if(date_2-date_1>14){
+							entry <- c(array[nrow(array),]$Chart_num,
+									   age,
+									   array[nrow(array),]$Gender,
+									   array[nrow(array),]$Race,
+									   array[nrow(array),]$Ethnicity,
+									   first_result_date,
+									   first_result_value,
+									   last_result_date,
+									   last_result_value,
+									   change,
+									   final_result_below_threshold
+									  )
+							HLDReport[nrow(HLDReport)+1,] <- entry						
+						}
+
 					} else if(type=="xlsx"){
-						first_result_date <- substring(first_result_date,1,10)
-						last_result_date <- substring(last_result_date,1,10)
-						entry <- c(array[nrow(array),]$Chart_num,
-								   substring(paste0(patient$DOB[1]),1,4),
-								   array[nrow(array),]$Gender,
-								   array[nrow(array),]$Race,
-								   array[nrow(array),]$Ethnicity,
-								   first_result_date,
-								   first_result_value,
-								   last_result_date,
-								   last_result_value,
-								   change,
-								   final_result_below_threshold
-								  )
-					}
-					
-					HLDReport[nrow(HLDReport)+1,] <- entry
-										
+						date_1 <- as.Date(first_result_date,format="%Y-%m-%d %H:%M:%S")
+						date_2 <- as.Date(last_result_date,format="%Y-%m-%d %H:%M:%S")
+						if(date_2-date_1>14){
+							first_result_date <- substring(first_result_date,1,10)
+							last_result_date <- substring(last_result_date,1,10)
+							entry <- c(array[nrow(array),]$Chart_num,
+									   substring(paste0(patient$DOB[1]),1,4),
+									   array[nrow(array),]$Gender,
+									   array[nrow(array),]$Race,
+									   array[nrow(array),]$Ethnicity,
+									   first_result_date,
+									   first_result_value,
+									   last_result_date,
+									   last_result_value,
+									   change,
+									   final_result_below_threshold
+									  )
+							HLDReport[nrow(HLDReport)+1,] <- entry
+						}
+					}			
 				}	
 			}	
 		}

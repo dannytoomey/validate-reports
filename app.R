@@ -88,8 +88,8 @@ fluidPage(
     sidebarLayout(
       sidebarPanel(
       fileInput("hld_file_input", "Upload a CSV or XLSX file of the LDL cholesterol report on MDR", accept = c(".csv",".xlsx")),
-      textInput("hld_thres","Enter a minimum initial LDL level to include in analysis",value="100"),
-      textInput("hld_final","Enter a final LDL level to include in analysis",value="150"),
+      textInput("hld_thres","Enter a minimum initial LDL level to include in analysis",value="75"),
+      textInput("hld_final","Enter a final LDL level to include in analysis",value="125"),
       selectInput("hld_group_select", "Select a variable to use for plotting", choices = c("Age","Gender")),
       downloadButton('download_hld_data', 'Download data')
     ),
