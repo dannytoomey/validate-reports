@@ -78,38 +78,45 @@ a1c_analysis <- function(dataframe,type,A1cThreshold,A1cFinalValue){
 						} else {
 							age <- as.numeric(substr(array[nrow(array),]$DOB, nchar(array[nrow(array),]$DOB)-2+1, nchar(array[nrow(array),]$DOB)))+1900
 						}
+						date_1 <- as.Date(first_result_date,format="%m/%d/%Y %H:%M")
+						date_2 <- as.Date(last_result_date,format="%m/%d/%Y %H:%M")
+						if(date_2-date_1>30){
+							entry <- c(array[nrow(array),]$Chart_num,
+									   age,
+									   array[nrow(array),]$Gender,
+									   array[nrow(array),]$Race,
+									   array[nrow(array),]$Ethnicity,
+									   first_result_date,
+									   first_result_value,
+									   last_result_date,
+									   last_result_value,
+									   change,
+									   final_result_below_threshold
+									  )
+							A1cReport[nrow(A1cReport)+1,] <- entry
+						}
 
-						entry <- c(array[nrow(array),]$Chart_num,
-								   age,
-								   array[nrow(array),]$Gender,
-								   array[nrow(array),]$Race,
-								   array[nrow(array),]$Ethnicity,
-								   first_result_date,
-								   first_result_value,
-								   last_result_date,
-								   last_result_value,
-								   change,
-								   final_result_below_threshold
-								  )
 					} else if(type=="xlsx"){
 						first_result_date <- substring(first_result_date,1,10)
 						last_result_date <- substring(last_result_date,1,10)
-						entry <- c(array[nrow(array),]$Chart_num,
-								   substring(paste0(patient$DOB[1]),1,4),
-								   array[nrow(array),]$Gender,
-								   array[nrow(array),]$Race,
-								   array[nrow(array),]$Ethnicity,
-								   first_result_date,
-								   first_result_value,
-								   last_result_date,
-								   last_result_value,
-								   change,
-								   final_result_below_threshold
-								  )
-					}
-					
-					A1cReport[nrow(A1cReport)+1,] <- entry
-										
+						date_1 <- as.Date(first_result_date,format="%Y-%m-%d")
+						date_2 <- as.Date(last_result_date,format="%Y-%m-%d")
+						if(date_2-date_1>30){				
+							entry <- c(array[nrow(array),]$Chart_num,
+									   substring(paste0(patient$DOB[1]),1,4),
+									   array[nrow(array),]$Gender,
+									   array[nrow(array),]$Race,
+									   array[nrow(array),]$Ethnicity,
+									   first_result_date,
+									   first_result_value,
+									   last_result_date,
+									   last_result_value,
+									   change,
+									   final_result_below_threshold
+									  )
+							A1cReport[nrow(A1cReport)+1,] <- entry
+						}	
+					}										
 				}	
 			}	
 		}
