@@ -11,7 +11,7 @@ a1c_summary_stats <- function(df,finalValue){
 a1c_summary_bins <- function(df,initialValue){
 	bins <- vector()
 	vals <- vector()
-	for(val in initialValue:13){
+	for(val in 1:13){
 		bin_label <- paste0("",val," - ",val+1,"")
 		n_in_bin <- sum(val < df$Last_Result_Value & df$Last_Result_Value <= val+1)
 		bins <- c(bins,bin_label)
