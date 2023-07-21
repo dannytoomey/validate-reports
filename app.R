@@ -234,8 +234,8 @@ server <- function(input, output, session) {
       output$a1c_plot <- renderImage({
         outfile <- tempfile(fileext = '.png')
         png(outfile, 
-          width = 5000, 
-          height = 2500,
+          width = 5250, 
+          height = 2750,
           res = 50*10)
         analysis <- get_data(input,file_input,page)
         esc_array <- list()
@@ -248,7 +248,6 @@ server <- function(input, output, session) {
           combined_es <- esc::combine_esc(esc_array[1],esc_array[2])
           meta <- do_meta_es(combined_es,paste0("Gender and odds of improving HgA1c below ",input$a1c_final))
           meta::forest.meta(meta,
-                            sortvar = TE,
                             print.tau2 = FALSE,
                             leftlabs = c("Gender", "g", "SE"),
                             fontsize=16,
@@ -261,6 +260,7 @@ server <- function(input, output, session) {
         if(input$a1c_group_select=="Age"){
           age_quants <- quantile(as.numeric(analysis$Birth_Year),probs=c(0,0.25,0.5,0.75,1))
           age_quant_num <- vector()
+          age_quant <- vector()
           for(chart in analysis$Chart_num){
             this_chart <- analysis[analysis$Chart_num==chart,]
             if(age_quants[[1]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[2]]){
@@ -272,12 +272,14 @@ server <- function(input, output, session) {
             if(age_quants[[3]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[4]]){
               x <- 3
             }
-            if(age_quants[[4]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[5]]){
+            if(age_quants[[4]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[5]]){
               x <- 4
             }
             age_quant_num <- c(age_quant_num,paste0("Age quantile ",x," - ",age_quants[[x]], " to ",age_quants[[x+1]],""))
+            age_quant <- c(age_quant,x)
           }
-          analysis$age_quant_num <- age_quant_num
+          analysis$age_quant_num <- age_quant_num  
+          analysis$age_quant <- age_quant
           for(group in unique(analysis$age_quant_num)){
             esc_array[[i]] <- get_esc(analysis,group,"age")
             i <- i+1
@@ -285,7 +287,7 @@ server <- function(input, output, session) {
           combined_es <- esc::combine_esc(esc_array[1],esc_array[2],esc_array[3],esc_array[4])
           meta <- do_meta_es(combined_es,paste0("Age and odds of improving HgA1c below ",input$a1c_final))
           meta::forest.meta(meta,
-                            sortvar = TE,
+                            sortvar=unique(age_quant),
                             print.tau2 = FALSE,
                             leftlabs = c("Age", "g", "SE"),
                             fontsize=16,
@@ -364,8 +366,8 @@ server <- function(input, output, session) {
       output$bp_plot <- renderImage({
         outfile <- tempfile(fileext = '.png')
         png(outfile, 
-          width = 5000, 
-          height = 2500,
+          width = 5250, 
+          height = 2750,
           res = 50*10)
         analysis <- get_data(input,file_input,page)
         esc_array <- list()
@@ -373,23 +375,26 @@ server <- function(input, output, session) {
         if(input$bp_group_select=="Age"){
           age_quants <- quantile(as.numeric(analysis$Birth_Year),probs=c(0,0.25,0.5,0.75,1))
           age_quant_num <- vector()
+          age_quant <- vector()
           for(chart in analysis$Chart_num){
             this_chart <- analysis[analysis$Chart_num==chart,]
-            if(age_quants[[1]] < as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[2]]){
+            if(age_quants[[1]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[2]]){
               x <- 1
             }
-            if(age_quants[[2]] < as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[3]]){
+            if(age_quants[[2]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[3]]){
               x <- 2
             }
-            if(age_quants[[3]] < as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[4]]){
+            if(age_quants[[3]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[4]]){
               x <- 3
             }
-            if(age_quants[[4]] < as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[5]]){
+            if(age_quants[[4]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[5]]){
               x <- 4
             }
             age_quant_num <- c(age_quant_num,paste0("Age quantile ",x," - ",age_quants[[x]], " to ",age_quants[[x+1]],""))
+            age_quant <- c(age_quant,x)
           }
-          analysis$age_quant_num <- age_quant_num
+          analysis$age_quant_num <- age_quant_num  
+          analysis$age_quant <- age_quant
           for(group in unique(analysis$age_quant_num)){
             esc_array[[i]] <- get_esc(analysis,group,"age")
             i <- i+1
@@ -397,7 +402,7 @@ server <- function(input, output, session) {
           combined_es <- esc::combine_esc(esc_array[1],esc_array[2],esc_array[3],esc_array[4])
           meta <- do_meta_es(combined_es,paste0("Age and odds of improving Blood Pressure below ",input$bp_final))
           meta::forest.meta(meta,
-                            sortvar = TE,
+                            sortvar=unique(age_quant),
                             print.tau2 = FALSE,
                             leftlabs = c("Age", "g", "SE"),
                             fontsize=16,
@@ -468,8 +473,8 @@ server <- function(input, output, session) {
       output$hld_plot <- renderImage({
         outfile <- tempfile(fileext = '.png')
         png(outfile, 
-          width = 5000, 
-          height = 2500,
+          width = 5250, 
+          height = 2750,
           res = 50*10)
         analysis <- get_data(input,file_input,page)
         esc_array <- list()
@@ -482,7 +487,6 @@ server <- function(input, output, session) {
           combined_es <- esc::combine_esc(esc_array[1],esc_array[2])
           meta <- do_meta_es(combined_es,paste0("Gender and odds of improving LDL cholesterol below ",input$hld_final))
           meta::forest.meta(meta,
-                            sortvar = TE,
                             print.tau2 = FALSE,
                             leftlabs = c("Gender", "g", "SE"),
                             fontsize=16,
@@ -495,23 +499,26 @@ server <- function(input, output, session) {
         if(input$hld_group_select=="Age"){
           age_quants <- quantile(as.numeric(analysis$Birth_Year),probs=c(0,0.25,0.5,0.75,1))
           age_quant_num <- vector()
+          age_quant <- vector()
           for(chart in analysis$Chart_num){
             this_chart <- analysis[analysis$Chart_num==chart,]
-            if(age_quants[[1]] < as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[2]]){
+            if(age_quants[[1]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[2]]){
               x <- 1
             }
-            if(age_quants[[2]] < as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[3]]){
+            if(age_quants[[2]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[3]]){
               x <- 2
             }
-            if(age_quants[[3]] < as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[4]]){
+            if(age_quants[[3]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[4]]){
               x <- 3
             }
-            if(age_quants[[4]] < as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[5]]){
+            if(age_quants[[4]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[5]]){
               x <- 4
             }
             age_quant_num <- c(age_quant_num,paste0("Age quantile ",x," - ",age_quants[[x]], " to ",age_quants[[x+1]],""))
+            age_quant <- c(age_quant,x)
           }
-          analysis$age_quant_num <- age_quant_num
+          analysis$age_quant_num <- age_quant_num  
+          analysis$age_quant <- age_quant
           for(group in unique(analysis$age_quant_num)){
             esc_array[[i]] <- get_esc(analysis,group,"age")
             i <- i+1
@@ -519,7 +526,7 @@ server <- function(input, output, session) {
           combined_es <- esc::combine_esc(esc_array[1],esc_array[2],esc_array[3],esc_array[4])
           meta <- do_meta_es(combined_es,paste0("Age and odds of improving LDL cholesterol below ",input$hld_final))
           meta::forest.meta(meta,
-                            sortvar = TE,
+                            sortvar=unique(age_quant),
                             print.tau2 = FALSE,
                             leftlabs = c("Age", "g", "SE"),
                             fontsize=16,
