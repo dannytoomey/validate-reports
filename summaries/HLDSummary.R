@@ -11,9 +11,9 @@ hld_summary_stats <- function(df,finalValue){
 hld_summary_bins <- function(df,initialValue){
 	bins <- vector()
 	vals <- vector()
-	for(val in seq(initialValue,300,20)){
-		bin_label <- paste0("",val," - ",val+20,"")
-		n_in_bin <- sum(val < df$Last_Result_Value & df$Last_Result_Value <= val+20)
+	for(val in seq(25,275,25)){
+		bin_label <- paste0("",val," - ",val+25,"")
+		n_in_bin <- sum(val < df$Last_Result_Value & df$Last_Result_Value <= val+25)
 		bins <- c(bins,bin_label)
 		vals <- c(vals,n_in_bin)
 	}
