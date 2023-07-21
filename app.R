@@ -28,16 +28,26 @@ a1c_report <- tabPanel(
     tabsetPanel(
       tabPanel(
           title = "Summary statistics",
-          tableOutput("a1c_stats")
+          fluidRow(
+            column(width=3,strong(textOutput("a1c_stats_title"))),
+            column(width=4,tableOutput("a1c_stats")),            
+          ),
+          fluidRow(
+            column(width=3,strong(textOutput("a1c_bins_title"))),
+            column(width=4,tableOutput("a1c_bins")),
+          )
         ),
         tabPanel(
           title = "Plots",
-          plotOutput("a1c_plot")
+          fluidRow(
+            plotOutput("a1c_plot"),
+            verbatimTextOutput("a1c_summary")
+          )
         ),
         tabPanel(
           title = "Processed data",
           DT::dataTableOutput("a1c_data")
-        )
+        ),
       )
     )
   )
@@ -49,7 +59,7 @@ bp_report <- tabPanel(
   sidebarLayout(
     sidebarPanel(
     fileInput("bp_file_input", "Upload a CSV or XLSX file of the blood pressure report on MDR", accept = c(".csv",".xlsx")),
-    textInput("bp_thres","Enter a minimum initial systolic BP to include in analysis",value="100"),
+    textInput("bp_thres","Enter a minimum initial systolic BP to include in analysis",value="80"),
     textInput("bp_final","Enter a final systolic BP to include in analysis",value="130"),
     selectInput("bp_group_select", "Select a variable to use for plotting", choices = c("Age")),
     downloadButton('download_bp_data', 'Download data')
@@ -58,11 +68,21 @@ bp_report <- tabPanel(
     tabsetPanel(
       tabPanel(
           title = "Summary statistics",
-          tableOutput("bp_stats")
+          fluidRow(
+            column(width=3,strong(textOutput("bp_stats_title"))),
+            column(width=4,tableOutput("bp_stats")),            
+          ),
+          fluidRow(
+            column(width=3,strong(textOutput("bp_bins_title"))),
+            column(width=4,tableOutput("bp_bins")),
+          )
         ),
         tabPanel(
           title = "Plots",
-          plotOutput("bp_plot")
+          fluidRow(
+            plotOutput("bp_plot"),
+            verbatimTextOutput("bp_summary")
+          )          
         ),
         tabPanel(
           title = "Processed data",
@@ -79,7 +99,7 @@ hld_report <- tabPanel(
   sidebarLayout(
     sidebarPanel(
     fileInput("hld_file_input", "Upload a CSV or XLSX file of the LDL cholesterol report on MDR", accept = c(".csv",".xlsx")),
-    textInput("hld_thres","Enter a minimum initial LDL level to include in analysis",value="75"),
+    textInput("hld_thres","Enter a minimum initial LDL level to include in analysis",value="50"),
     textInput("hld_final","Enter a final LDL level to include in analysis",value="125"),
     selectInput("hld_group_select", "Select a variable to use for plotting", choices = c("Age","Gender")),
     downloadButton('download_hld_data', 'Download data')
@@ -88,11 +108,21 @@ hld_report <- tabPanel(
     tabsetPanel(
       tabPanel(
           title = "Summary statistics",
-          tableOutput("hld_stats")
+          fluidRow(
+            column(width=3,strong(textOutput("hld_stats_title"))),
+            column(width=4,tableOutput("hld_stats")),            
+          ),
+          fluidRow(
+            column(width=3,strong(textOutput("hld_bins_title"))),
+            column(width=4,tableOutput("hld_bins")),
+          )
         ),
         tabPanel(
           title = "Plots",
-          plotOutput("hld_plot")
+          fluidRow(
+            plotOutput("hld_plot"),
+            verbatimTextOutput("hld_summary")
+          )
         ),
         tabPanel(
           title = "Processed data",
@@ -191,11 +221,21 @@ server <- function(input, output, session) {
         analysis <- get_data(input,file_input,page)
         a1c_summary_stats(analysis,input$a1c_final)
       })
+      output$a1c_bins <- renderTable({
+        analysis <- get_data(input,file_input,page)
+        a1c_summary_bins(analysis,input$a1c_thres)
+      })
+      output$a1c_stats_title <- renderText({
+        "Summary statistics:"
+      })
+      output$a1c_bins_title <- renderText({
+        "Number of patients with a final value of:"
+      }) 
       output$a1c_plot <- renderImage({
         outfile <- tempfile(fileext = '.png')
         png(outfile, 
-          width = 5500, 
-          height = 3500,
+          width = 5000, 
+          height = 2500,
           res = 50*10)
         analysis <- get_data(input,file_input,page)
         esc_array <- list()
@@ -206,14 +246,17 @@ server <- function(input, output, session) {
             i <- i+1
           }
           combined_es <- esc::combine_esc(esc_array[1],esc_array[2])
-          meta <- do_meta_es(combined_es,"Gender and odds of improving HgA1c")
+          meta <- do_meta_es(combined_es,paste0("Gender and odds of improving HgA1c below ",input$a1c_final))
           meta::forest.meta(meta,
                             sortvar = TE,
                             print.tau2 = FALSE,
                             leftlabs = c("Gender", "g", "SE"),
-                            fontsize=16
+                            fontsize=16,
+                            label.left = "<- Less likely",
+                            label.right = "More likely ->",
+                            spacing = 1.5
                            )
-          grid::grid.text("Odds of reducing A1c by Gender", x=0.5,y=0.85, gp=gpar(fontsize=18))
+          grid::grid.text(paste0("Gender and odds of improving HgA1c below ",input$a1c_final), x=0.5,y=0.9, gp=gpar(fontsize=18))
         }
         if(input$a1c_group_select=="Age"){
           age_quants <- quantile(as.numeric(analysis$Birth_Year),probs=c(0,0.25,0.5,0.75,1))
@@ -240,20 +283,64 @@ server <- function(input, output, session) {
             i <- i+1
           }
           combined_es <- esc::combine_esc(esc_array[1],esc_array[2],esc_array[3],esc_array[4])
-          meta <- do_meta_es(combined_es,"Age and odds of improving HgA1c")
+          meta <- do_meta_es(combined_es,paste0("Age and odds of improving HgA1c below ",input$a1c_final))
           meta::forest.meta(meta,
                             sortvar = TE,
                             print.tau2 = FALSE,
                             leftlabs = c("Age", "g", "SE"),
-                            fontsize=16
+                            fontsize=16,
+                            label.left = "<- Less likely",
+                            label.right = "More likely ->",
+                            spacing = 1.5
                            )
-          grid::grid.text("Odds of reducing A1c by Age", x=0.5,y=0.85, gp=gpar(fontsize=18))
+          grid::grid.text(paste0("Age and odds of improving HgA1c below ",input$a1c_final), x=0.5,y=0.9, gp=gpar(fontsize=18))
         }
         dev.off()
         list(src = outfile,
-             width=600,
+             width=750,
              height=400)
       },deleteFile = TRUE)
+      output$a1c_summary <- renderPrint({
+        analysis <- get_data(input,file_input,page)
+        esc_array <- list()
+        i<-1
+        if(input$a1c_group_select=="Gender"){
+          for(group in unique(analysis$Gender)){
+            esc_array[[i]] <- get_esc(analysis,group,"gender")
+            i <- i+1
+          }
+          combined_es <- esc::combine_esc(esc_array[1],esc_array[2])
+          meta <- do_meta_es(combined_es,paste0("Gender and odds of improving HgA1c below ",input$a1c_final))
+        }
+        if(input$a1c_group_select=="Age"){
+          age_quants <- quantile(as.numeric(analysis$Birth_Year),probs=c(0,0.25,0.5,0.75,1))
+          age_quant_num <- vector()
+          for(chart in analysis$Chart_num){
+            this_chart <- analysis[analysis$Chart_num==chart,]
+            if(age_quants[[1]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[2]]){
+              x <- 1
+            }
+            if(age_quants[[2]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[3]]){
+              x <- 2
+            }
+            if(age_quants[[3]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[4]]){
+              x <- 3
+            }
+            if(age_quants[[4]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[5]]){
+              x <- 4
+            }
+            age_quant_num <- c(age_quant_num,paste0("Age quantile ",x," - ",age_quants[[x]], " to ",age_quants[[x+1]],""))
+          }
+          analysis$age_quant_num <- age_quant_num
+          for(group in unique(analysis$age_quant_num)){
+            esc_array[[i]] <- get_esc(analysis,group,"age")
+            i <- i+1
+          }
+          combined_es <- esc::combine_esc(esc_array[1],esc_array[2],esc_array[3],esc_array[4])
+          meta <- do_meta_es(combined_es,paste0("Age and odds of improving HgA1c below ",input$a1c_final))
+        }
+        meta
+      }) 
     }
     if(page=="Blood Pressure Analysis"){
       file_input <- input$bp_file_input
@@ -264,11 +351,21 @@ server <- function(input, output, session) {
         analysis <- get_data(input,file_input,page)
         bp_summary_stats(analysis,input$bp_final)
       })
+      output$bp_bins <- renderTable({
+        analysis <- get_data(input,file_input,page)
+        bp_summary_bins(analysis,input$bp_thres)
+      })
+      output$bp_stats_title <- renderText({
+        "Summary statistics:"
+      })
+      output$bp_bins_title <- renderText({
+        "Number of patients with a final value of:"
+      })
       output$bp_plot <- renderImage({
         outfile <- tempfile(fileext = '.png')
         png(outfile, 
-          width = 5500, 
-          height = 3500,
+          width = 5000, 
+          height = 2500,
           res = 50*10)
         analysis <- get_data(input,file_input,page)
         esc_array <- list()
@@ -298,20 +395,56 @@ server <- function(input, output, session) {
             i <- i+1
           }
           combined_es <- esc::combine_esc(esc_array[1],esc_array[2],esc_array[3],esc_array[4])
-          meta <- do_meta_es(combined_es,"Age and odds of improving Blood Pressure")
+          meta <- do_meta_es(combined_es,paste0("Age and odds of improving Blood Pressure below ",input$bp_final))
           meta::forest.meta(meta,
                             sortvar = TE,
                             print.tau2 = FALSE,
                             leftlabs = c("Age", "g", "SE"),
-                            fontsize=16
+                            fontsize=16,
+                            label.left = "<- Less likely",
+                            label.right = "More likely ->",
+                            spacing = 1.5
                            )
-          grid::grid.text("Odds of reducing Blood Pressure by Age", x=0.5,y=0.85, gp=gpar(fontsize=18))
+          grid::grid.text(paste0("Age and odds of improving Blood Pressure below ",input$bp_final), x=0.5,y=0.9, gp=gpar(fontsize=18))
         }
         dev.off()
         list(src = outfile,
-             width=600,
+             width=750,
              height=400)
       },deleteFile = TRUE)
+      output$bp_summary <- renderPrint({
+        analysis <- get_data(input,file_input,page)
+        esc_array <- list()
+        i<-1
+        if(input$bp_group_select=="Age"){
+          age_quants <- quantile(as.numeric(analysis$Birth_Year),probs=c(0,0.25,0.5,0.75,1))
+          age_quant_num <- vector()
+          for(chart in analysis$Chart_num){
+            this_chart <- analysis[analysis$Chart_num==chart,]
+            if(age_quants[[1]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[2]]){
+              x <- 1
+            }
+            if(age_quants[[2]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[3]]){
+              x <- 2
+            }
+            if(age_quants[[3]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[4]]){
+              x <- 3
+            }
+            if(age_quants[[4]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[5]]){
+              x <- 4
+            }
+            age_quant_num <- c(age_quant_num,paste0("Age quantile ",x," - ",age_quants[[x]], " to ",age_quants[[x+1]],""))
+          }
+          analysis$age_quant_num <- age_quant_num
+          for(group in unique(analysis$age_quant_num)){
+            esc_array[[i]] <- get_esc(analysis,group,"age")
+            i <- i+1
+          }
+          combined_es <- esc::combine_esc(esc_array[1],esc_array[2],esc_array[3],esc_array[4])
+          meta <- do_meta_es(combined_es,paste0("Age and odds of improving Blood Pressure below ",input$bp_final))
+        }
+        meta
+      })
     }
     if(page=="LDL Analysis"){
       file_input <- input$hld_file_input
@@ -322,11 +455,21 @@ server <- function(input, output, session) {
         analysis <- get_data(input,file_input,page)
         hld_summary_stats(analysis,input$hld_final)
       })
+      output$hld_bins <- renderTable({
+        analysis <- get_data(input,file_input,page)
+        hld_summary_bins(analysis,input$hld_thres)
+      })
+      output$hld_stats_title <- renderText({
+        "Summary statistics:"
+      })
+      output$hld_bins_title <- renderText({
+        "Number of patients with a final value of:"
+      })
       output$hld_plot <- renderImage({
         outfile <- tempfile(fileext = '.png')
         png(outfile, 
-          width = 5500, 
-          height = 3500,
+          width = 5000, 
+          height = 2500,
           res = 50*10)
         analysis <- get_data(input,file_input,page)
         esc_array <- list()
@@ -337,14 +480,17 @@ server <- function(input, output, session) {
             i <- i+1
           }
           combined_es <- esc::combine_esc(esc_array[1],esc_array[2])
-          meta <- do_meta_es(combined_es,"Gender and odds of improving LDL cholesterol")
+          meta <- do_meta_es(combined_es,paste0("Gender and odds of improving LDL cholesterol below ",input$hld_final))
           meta::forest.meta(meta,
                             sortvar = TE,
                             print.tau2 = FALSE,
                             leftlabs = c("Gender", "g", "SE"),
-                            fontsize=16
+                            fontsize=16,
+                            label.left = "<- Less likely",
+                            label.right = "More likely ->",
+                            spacing = 1.5
                            )
-          grid::grid.text("Odds of reducing LDL cholesterol by Gender", x=0.5,y=0.85, gp=gpar(fontsize=18))
+          grid::grid.text(paste0("Gender and odds of improving LDL cholesterol below ",input$hld_final), x=0.5,y=0.9, gp=gpar(fontsize=18))
         }
         if(input$hld_group_select=="Age"){
           age_quants <- quantile(as.numeric(analysis$Birth_Year),probs=c(0,0.25,0.5,0.75,1))
@@ -371,21 +517,65 @@ server <- function(input, output, session) {
             i <- i+1
           }
           combined_es <- esc::combine_esc(esc_array[1],esc_array[2],esc_array[3],esc_array[4])
-          meta <- do_meta_es(combined_es,"Age and odds of improving LDL cholesterol")
+          meta <- do_meta_es(combined_es,paste0("Age and odds of improving LDL cholesterol below ",input$hld_final))
           meta::forest.meta(meta,
                             sortvar = TE,
                             print.tau2 = FALSE,
                             leftlabs = c("Age", "g", "SE"),
-                            fontsize=16
+                            fontsize=16,
+                            label.left = "<- Less likely",
+                            label.right = "More likely ->",
+                            spacing = 1.5
                            )
-          grid::grid.text("Odds of reducing LDL cholesterol by Age", x=0.5,y=0.85, gp=gpar(fontsize=18))
+          grid::grid.text(paste0("Age and odds of improving LDL cholesterol below ",input$hld_final), x=0.5,y=0.9, gp=gpar(fontsize=18))
         }
         dev.off()
         list(src = outfile,
-             width=600,
+             width=750,
              height=400)
       },deleteFile = TRUE)
     }
+    output$hld_summary <- renderPrint({
+        analysis <- get_data(input,file_input,page)
+        esc_array <- list()
+        i<-1
+        if(input$hld_group_select=="Gender"){
+          for(group in unique(analysis$Gender)){
+            esc_array[[i]] <- get_esc(analysis,group,"gender")
+            i <- i+1
+          }
+          combined_es <- esc::combine_esc(esc_array[1],esc_array[2])
+          meta <- do_meta_es(combined_es,paste0("Gender and odds of improving LDL cholesterol below ",input$hld_final))
+        }
+        if(input$hld_group_select=="Age"){
+          age_quants <- quantile(as.numeric(analysis$Birth_Year),probs=c(0,0.25,0.5,0.75,1))
+          age_quant_num <- vector()
+          for(chart in analysis$Chart_num){
+            this_chart <- analysis[analysis$Chart_num==chart,]
+            if(age_quants[[1]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[2]]){
+              x <- 1
+            }
+            if(age_quants[[2]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[3]]){
+              x <- 2
+            }
+            if(age_quants[[3]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[4]]){
+              x <- 3
+            }
+            if(age_quants[[4]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[5]]){
+              x <- 4
+            }
+            age_quant_num <- c(age_quant_num,paste0("Age quantile ",x," - ",age_quants[[x]], " to ",age_quants[[x+1]],""))
+          }
+          analysis$age_quant_num <- age_quant_num
+          for(group in unique(analysis$age_quant_num)){
+            esc_array[[i]] <- get_esc(analysis,group,"age")
+            i <- i+1
+          }
+          combined_es <- esc::combine_esc(esc_array[1],esc_array[2],esc_array[3],esc_array[4])
+          meta <- do_meta_es(combined_es,paste0("Age and odds of improving LDL cholesterol below ",input$hld_final))
+        }
+        meta
+      })
   })
   
   observe({

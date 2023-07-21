@@ -7,3 +7,18 @@ a1c_summary_stats <- function(df,finalValue){
 						Number=c(n_imp_below_thres,n_improved,n_no_change,n_decreased))
 	return(table)
 }
+
+a1c_summary_bins <- function(df,initialValue){
+	bins <- vector()
+	vals <- vector()
+	for(val in initialValue:13){
+		bin_label <- paste0("",val," - ",val+1,"")
+		n_in_bin <- sum(val < df$Last_Result_Value & df$Last_Result_Value <= val+1)
+		bins <- c(bins,bin_label)
+		vals <- c(vals,n_in_bin)
+	}
+	table <- data.frame(Bin=bins,
+						Frequency=vals)
+	return(table)
+
+}
