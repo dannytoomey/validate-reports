@@ -7,3 +7,18 @@ bp_summary_stats <- function(df,finalValue){
 						Number=c(n_imp_below_thres,n_improved,n_no_change,n_decreased))
 	return(table)
 }
+
+bp_summary_bins <- function(df,initialValue){
+	bins <- vector()
+	vals <- vector()
+	for(val in seq(initialValue,200,10)){
+		bin_label <- paste0("",val," - ",val+10,"")
+		n_in_bin <- sum(val < df$Last_Result_Systolic & df$Last_Result_Systolic <= val+10)
+		bins <- c(bins,bin_label)
+		vals <- c(vals,n_in_bin)
+	}
+	table <- data.frame(Bin=bins,
+						Frequency=vals)
+	return(table)
+
+}
