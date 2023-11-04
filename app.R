@@ -1,17 +1,6 @@
-library(shiny)
-library(DT)
-library(tools)
-library(readxl)
-library(metafor)
-library(meta)
-library(esc)
-library(grid)
-source("./analyses/A1cAnalysis.R")
-source("./analyses/BPAnalysis.R")
-source("./analyses/HLDAnalysis.R")
-source("./summaries/A1cSummary.R")
-source("./summaries/BPSummary.R")
-source("./summaries/HLDSummary.R")
+lapply(c("shiny","DT","tools","readxl","metafor","meta","esc","grid"),require,character.only=TRUE)
+for(f in list.files('./analyses', full.names=TRUE)){source(f)}
+for(f in list.files('./summaries', full.names=TRUE)){source(f)}
 
 a1c_report <- tabPanel(
   title="HgA1c Analysis",
@@ -95,7 +84,7 @@ bp_report <- tabPanel(
 
 hld_report <- tabPanel(
   title = "LDL Analysis",
-  titlePanel("Generate change in cholesterol reports"),
+  titlePanel("Generate change in LDL cholesterol"),
   sidebarLayout(
     sidebarPanel(
     fileInput("hld_file_input", "Upload a CSV or XLSX file of the LDL cholesterol report on MDR", accept = c(".csv",".xlsx")),
@@ -133,6 +122,46 @@ hld_report <- tabPanel(
   )
 )
 
+tchol_report <- tabPanel(
+  title = "Total Cholesterol Analysis",
+  titlePanel("Generate change in total cholesterol"),
+  sidebarLayout(
+    sidebarPanel(
+    fileInput("tchol_file_input", "Upload a CSV or XLSX file of the HDL cholesterol report on MDR", accept = c(".csv",".xlsx")),
+    textInput("tchol_thres","Enter a minimum initial total cholesterol level to include in analysis",value="100"),
+    textInput("tchol_final","Enter a final cholesterol level to include in analysis",value="200"),
+    selectInput("tchol_group_select", "Select a variable to use for plotting", choices = c("Age","Gender")),
+    downloadButton('download_tchol_data', 'Download data')
+  ),
+  mainPanel(
+    tabsetPanel(
+      tabPanel(
+          title = "Summary statistics",
+          fluidRow(
+            column(width=3,strong(textOutput("tchol_stats_title"))),
+            column(width=4,tableOutput("tchol_stats")),            
+          ),
+          fluidRow(
+            column(width=3,strong(textOutput("tchol_bins_title"))),
+            column(width=4,tableOutput("tchol_bins")),
+          )
+        ),
+        tabPanel(
+          title = "Plots",
+          fluidRow(
+            plotOutput("tchol_plot"),
+            verbatimTextOutput("tchol_summary")
+          )
+        ),
+        tabPanel(
+          title = "Processed data",
+          DT::dataTableOutput("tchol_data")
+        )
+      )
+    )
+  )
+)
+
 get_data <-function(input,file_input,page){
   a1c_thres <- input$a1c_thres
   a1c_final <- input$a1c_final    
@@ -140,6 +169,8 @@ get_data <-function(input,file_input,page){
   bp_final <- input$bp_final
   hld_thres <- input$hld_thres
   hld_final <- input$hld_final
+  tchol_thres <- input$tchol_thres
+  tchol_final <- input$tchol_final
   ext <- tools::file_ext(file_input$datapath)
   req(file_input)
   validate(need(ext == "csv" || ext == "xlsx", "Please upload a csv or xlsx file"))
@@ -159,6 +190,9 @@ get_data <-function(input,file_input,page){
   if(page=="LDL Analysis"){
       data <- hld_analysis(dataframe,ext,hld_thres,hld_final)
   }
+  if(page=="Total Cholesterol Analysis"){
+      data <- tchol_analysis(dataframe,ext,tchol_thres,tchol_final)
+  }
   return(data)
 }
 
@@ -167,7 +201,8 @@ ui <- navbarPage(
   id = "navbarid",
   a1c_report,
   bp_report,
-  hld_report
+  hld_report,
+  tchol_report
 )
 
 get_odds_gender <- function(data,group){
@@ -541,8 +576,7 @@ server <- function(input, output, session) {
              width=750,
              height=400)
       },deleteFile = TRUE)
-    }
-    output$hld_summary <- renderPrint({
+      output$hld_summary <- renderPrint({
         analysis <- get_data(input,file_input,page)
         esc_array <- list()
         i<-1
@@ -583,6 +617,139 @@ server <- function(input, output, session) {
         }
         meta
       })
+    }
+    if(page=="Total Cholesterol Analysis"){
+      file_input <- input$tchol_file_input
+      output$tchol_data <- DT::renderDataTable({
+        get_data(input,file_input,page)
+      })
+      output$tchol_stats <- renderTable({
+        analysis <- get_data(input,file_input,page)
+        tchol_summary_stats(analysis,input$tchol_final)
+      })
+      output$tchol_bins <- renderTable({
+        analysis <- get_data(input,file_input,page)
+        tchol_summary_bins(analysis,input$tchol_thres)
+      })
+      output$tchol_stats_title <- renderText({
+        "Summary statistics:"
+      })
+      output$tchol_bins_title <- renderText({
+        "Number of patients with a final value of:"
+      })
+      output$tchol_plot <- renderImage({
+        outfile <- tempfile(fileext = '.png')
+        png(outfile, 
+          width = 5250, 
+          height = 2750,
+          res = 50*10)
+        analysis <- get_data(input,file_input,page)
+        esc_array <- list()
+        i<-1
+        if(input$tchol_group_select=="Gender"){
+          for(group in unique(analysis$Gender)){
+            esc_array[[i]] <- get_esc(analysis,group,"gender")
+            i <- i+1
+          }
+          combined_es <- esc::combine_esc(esc_array[1],esc_array[2])
+          meta <- do_meta_es(combined_es,paste0("Gender and odds of improving total cholesterol below ",input$tchol_final))
+          meta::forest.meta(meta,
+                            print.tau2 = FALSE,
+                            leftlabs = c("Gender", "g", "SE"),
+                            fontsize=16,
+                            label.left = "<- Less likely",
+                            label.right = "More likely ->",
+                            spacing = 1.5
+                           )
+          grid::grid.text(paste0("Gender and odds of improving total cholesterol below ",input$tchol_final), x=0.5,y=0.9, gp=gpar(fontsize=18))
+        }
+        if(input$tchol_group_select=="Age"){
+          age_quants <- quantile(as.numeric(analysis$Birth_Year),probs=c(0,0.25,0.5,0.75,1))
+          age_quant_num <- vector()
+          age_quant <- vector()
+          for(chart in analysis$Chart_num){
+            this_chart <- analysis[analysis$Chart_num==chart,]
+            if(age_quants[[1]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[2]]){
+              x <- 1
+            }
+            if(age_quants[[2]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[3]]){
+              x <- 2
+            }
+            if(age_quants[[3]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[4]]){
+              x <- 3
+            }
+            if(age_quants[[4]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) <= age_quants[[5]]){
+              x <- 4
+            }
+            age_quant_num <- c(age_quant_num,paste0("Age quantile ",x," - ",age_quants[[x]], " to ",age_quants[[x+1]],""))
+            age_quant <- c(age_quant,x)
+          }
+          analysis$age_quant_num <- age_quant_num  
+          analysis$age_quant <- age_quant
+          for(group in unique(analysis$age_quant_num)){
+            esc_array[[i]] <- get_esc(analysis,group,"age")
+            i <- i+1
+          }
+          combined_es <- esc::combine_esc(esc_array[1],esc_array[2],esc_array[3],esc_array[4])
+          meta <- do_meta_es(combined_es,paste0("Age and odds of improving total cholesterol below ",input$tchol_final))
+          meta::forest.meta(meta,
+                            sortvar=unique(age_quant),
+                            print.tau2 = FALSE,
+                            leftlabs = c("Age", "g", "SE"),
+                            fontsize=16,
+                            label.left = "<- Less likely",
+                            label.right = "More likely ->",
+                            spacing = 1.5
+                           )
+          grid::grid.text(paste0("Age and odds of improving total cholesterol below ",input$tchol_final), x=0.5,y=0.9, gp=gpar(fontsize=18))
+        }
+        dev.off()
+        list(src = outfile,
+             width=750,
+             height=400)
+      },deleteFile = TRUE)
+    }
+    output$tchol_summary <- renderPrint({
+        analysis <- get_data(input,file_input,page)
+        esc_array <- list()
+        i<-1
+        if(input$tchol_group_select=="Gender"){
+          for(group in unique(analysis$Gender)){
+            esc_array[[i]] <- get_esc(analysis,group,"gender")
+            i <- i+1
+          }
+          combined_es <- esc::combine_esc(esc_array[1],esc_array[2])
+          meta <- do_meta_es(combined_es,paste0("Gender and odds of improving total cholesterol below ",input$tchol_final))
+        }
+        if(input$tchol_group_select=="Age"){
+          age_quants <- quantile(as.numeric(analysis$Birth_Year),probs=c(0,0.25,0.5,0.75,1))
+          age_quant_num <- vector()
+          for(chart in analysis$Chart_num){
+            this_chart <- analysis[analysis$Chart_num==chart,]
+            if(age_quants[[1]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[2]]){
+              x <- 1
+            }
+            if(age_quants[[2]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[3]]){
+              x <- 2
+            }
+            if(age_quants[[3]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[4]]){
+              x <- 3
+            }
+            if(age_quants[[4]] <= as.numeric(this_chart$Birth_Year) & as.numeric(this_chart$Birth_Year) < age_quants[[5]]){
+              x <- 4
+            }
+            age_quant_num <- c(age_quant_num,paste0("Age quantile ",x," - ",age_quants[[x]], " to ",age_quants[[x+1]],""))
+          }
+          analysis$age_quant_num <- age_quant_num
+          for(group in unique(analysis$age_quant_num)){
+            esc_array[[i]] <- get_esc(analysis,group,"age")
+            i <- i+1
+          }
+          combined_es <- esc::combine_esc(esc_array[1],esc_array[2],esc_array[3],esc_array[4])
+          meta <- do_meta_es(combined_es,paste0("Age and odds of improving total cholesterol below ",input$tchol_final))
+        }
+        meta
+      })
   })
   
   observe({
@@ -614,6 +781,17 @@ server <- function(input, output, session) {
       output$download_hld_data <- downloadHandler(
         filename = function() {
           paste("HLD-data-", Sys.Date(), ".csv", sep="")
+        },
+        content = function(file) {
+          write.csv(get_data(input,file_input,page), file)
+        }
+      )
+    }
+    if(page=="Total Cholesterol Analysis"){
+      file_input <- input$tchol_file_input
+      output$download_tchol_data <- downloadHandler(
+        filename = function() {
+          paste("TChol-data-", Sys.Date(), ".csv", sep="")
         },
         content = function(file) {
           write.csv(get_data(input,file_input,page), file)
