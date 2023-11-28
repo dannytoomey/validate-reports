@@ -162,6 +162,40 @@ tchol_report <- tabPanel(
   )
 )
 
+cz_report <- tabPanel(
+  title = "Corazones Sanos Analysis",
+  titlePanel("Compare patients in Corazones Sanos to the general patient population"),
+  sidebarLayout(
+    sidebarPanel(
+      fileInput("cz_file_input", "Upload a CSV or XLSX file of the HgA1c, BP, LDL, and total cholesterol lab results report on MDR",multiple=TRUE, accept = c(".csv",".xlsx")),
+      downloadButton('download_cz_data', 'Download data')
+    ),
+    mainPanel(
+      tabsetPanel(
+        tabPanel(  
+          title = "Summary statistics",
+          fluidRow(
+            column(width=3,strong(textOutput("cz_bins_title"))),
+            column(width=4,tableOutput("cz_bins")),            
+          ),
+          fluidRow(
+            column(width=3,strong(textOutput("cz_stats_title"))),
+            column(width=4,tableOutput("cz_stats")),
+          )
+        ),
+        tabPanel(
+          title = "Processed data",
+          DT::dataTableOutput("cz_data")
+        ),
+        tabPanel(
+          title = "Uploaded files",
+          DT::dataTableOutput("cz_files")
+        )
+      )
+    )
+  )
+)
+
 get_data <-function(input,file_input,page){
   a1c_thres <- input$a1c_thres
   a1c_final <- input$a1c_final    
@@ -182,16 +216,16 @@ get_data <-function(input,file_input,page){
     dataframe <- xl
   }
   if(page=="HgA1c Analysis"){
-      data <- a1c_analysis(dataframe,ext,a1c_thres,a1c_final)
+    data <- a1c_analysis(dataframe,ext,a1c_thres,a1c_final)
   }
   if(page=="Blood Pressure Analysis"){
-      data <- bp_analysis(dataframe,ext,bp_thres,bp_final)
+    data <- bp_analysis(dataframe,ext,bp_thres,bp_final)
   }
   if(page=="LDL Analysis"){
-      data <- hld_analysis(dataframe,ext,hld_thres,hld_final)
+    data <- hld_analysis(dataframe,ext,hld_thres,hld_final)
   }
   if(page=="Total Cholesterol Analysis"){
-      data <- tchol_analysis(dataframe,ext,tchol_thres,tchol_final)
+    data <- tchol_analysis(dataframe,ext,tchol_thres,tchol_final)
   }
   return(data)
 }
@@ -199,6 +233,7 @@ get_data <-function(input,file_input,page){
 ui <- navbarPage(
   title = "Select an analysis:",
   id = "navbarid",
+  cz_report,
   a1c_report,
   bp_report,
   hld_report,
@@ -242,6 +277,55 @@ do_meta_es <- function(combined_es,title){
           hakn = TRUE,
           title = title)
   return(meta)
+}
+get_cz_data <- function(file_input){
+ for(file in file_input$datapath){
+    ext <- tools::file_ext(file)
+    req(file)
+    validate(need(ext == "csv" || ext == "xlsx", "Please upload a csv or xlsx file"))
+    if(tools::file_ext(file)=="csv"){
+      csv <- read.csv(file,head=TRUE)
+      dataframe <- csv
+    } else if(tools::file_ext(file)=="xlsx"){
+      xl <- data.frame(readxl::read_excel(file))
+      dataframe <- xl
+    }
+    if("Systolic" %in% colnames(dataframe)){
+      bp_data <- bp_analysis(dataframe,ext,0,1000)
+      bp_data$Final_result_below_threshold <- NULL
+    }
+    if(is.element("HbA1c MFr Bld",unlist(dataframe))){
+      hga1c_data <- a1c_analysis(dataframe,ext,0,1000)
+      hga1c_data$Final_result_below_threshold <- hga1c_data$Birth_Year <- NULL
+    }
+    if(is.element("LDLc SerPl Calc-mCnc",unlist(dataframe))){
+      ldl_data <- hld_analysis(dataframe,ext,0,1000)
+      ldl_data$Final_result_below_threshold <- ldl_data$Birth_Year <- ldl_data$Gender <- ldl_data$Race <- ldl_data$Ethnicity <- NULL
+    }
+    if(is.element("HDLc SerPl-mCnc",unlist(dataframe))){
+      tchol_data <- tchol_analysis(dataframe,ext,0,1000)
+      tchol_data$Final_result_below_threshold <- tchol_data$Birth_Year <- tchol_data$Gender <- tchol_data$Race <- tchol_data$Ethnicity <- NULL
+    }
+    if("Enrollment.year" %in% colnames(dataframe)){
+      cz_enrollees <- dataframe
+      colnames(cz_enrollees)[5] <- "Chart_num"
+      cz_enrollees$`Last.name` <- cz_enrollees$`First.name` <- cz_enrollees$DOB <- NULL
+    }
+  }
+  if(exists("bp_data")==FALSE){
+    stop("Please upload all 4 MDR reports and a list of CZ enrollees. The BP report is missing.")
+  } else if(exists("hga1c_data")==FALSE){
+    stop("Please upload all 4 MDR reports and a list of CZ enrollees. The HgA1c report is missing.")
+  } else if(exists("ldl_data")==FALSE){
+    stop("Please upload all 4 MDR reports and a list of CZ enrollees. The LDL report is missing.")
+  } else if(exists("tchol_data")==FALSE){
+    stop("Please upload all 4 MDR reports and a list of CZ enrollees. The total cholesterol report is missing.")
+  } else if(exists("cz_enrollees")==FALSE){
+    stop("Please upload all 4 MDR reports and a list of CZ enrollees. A list of CZ enrollees is missing.")
+  } else {
+    combined_data <- Reduce(function(x, y) merge(x, y, all=TRUE), list(bp_data,hga1c_data,ldl_data,tchol_data,cz_enrollees))
+  } 
+  return(combined_data)
 }
 
 server <- function(input, output, session) {
@@ -618,7 +702,7 @@ server <- function(input, output, session) {
         meta
       })
     }
-    if(page=="Total Cholesterol Analysis"){
+    if(page=="Total Cholesterol Analysis"){ 
       file_input <- input$tchol_file_input
       output$tchol_data <- DT::renderDataTable({
         get_data(input,file_input,page)
@@ -708,8 +792,7 @@ server <- function(input, output, session) {
              width=750,
              height=400)
       },deleteFile = TRUE)
-    }
-    output$tchol_summary <- renderPrint({
+      output$tchol_summary <- renderPrint({
         analysis <- get_data(input,file_input,page)
         esc_array <- list()
         i<-1
@@ -750,6 +833,28 @@ server <- function(input, output, session) {
         }
         meta
       })
+    }
+    if(page=="Corazones Sanos Analysis"){
+      file_input <- input$cz_file_input
+      output$cz_files <- DT::renderDataTable({file_input})
+      output$cz_data <- DT::renderDataTable({
+        get_cz_data(file_input)
+      })
+      output$cz_bins_title <- renderText({
+        "Summary overview of improvement:"
+      })
+      output$cz_bins <- renderTable({
+        data <- get_cz_data(file_input)
+        cz_summary_bins(data)
+      })
+      output$cz_stats_title <- renderText({
+        "Relative risk and 95% CI for improvement for patients in CZ compared to patients not in CZ:"
+      })
+      output$cz_stats <- renderTable({
+        data <- get_cz_data(file_input)
+        cz_summary_stats(data)
+      })
+    }
   })
   
   observe({
@@ -795,6 +900,17 @@ server <- function(input, output, session) {
         },
         content = function(file) {
           write.csv(get_data(input,file_input,page), file)
+        }
+      )
+    }
+    if(page=="Corazones Sanos Analysis"){
+      file_input <- input$cz_file_input
+      output$download_cz_data <- downloadHandler(
+        filename = function() {
+          paste("CZ-data-", Sys.Date(), ".csv", sep="")
+        },
+        content = function(file) {
+          write.csv(get_cz_data(file_input), file)
         }
       )
     }

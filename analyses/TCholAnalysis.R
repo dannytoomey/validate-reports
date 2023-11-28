@@ -26,7 +26,7 @@ tchol_analysis <- function(dataframe,type,TCholThreshold,TCholFinalValue){
 	
 	chartNums = unique(dataframe$`Chart.`)
 	TCholReport <- data.frame(matrix(ncol = 11, nrow = 0))
-	colnames(TCholReport) <- c('Chart_num','Birth_Year','Gender','Race','Ethnicity','First_Result_Date','First_Result_Value','Last_Result_Date','Last_Result_Value','Change','Final_result_below_threshold')
+	colnames(TCholReport) <- c('Chart_num','Birth_Year','Gender','Race','Ethnicity','TChol_First_Result_Date','TChol_First_Result_Value','TChol_Last_Result_Date','TChol_Last_Result_Value','TChol_Change','Final_result_below_threshold')
 
 	for(chart in chartNums){
 		patient = dataframe[dataframe$`Chart.`==chart,]
