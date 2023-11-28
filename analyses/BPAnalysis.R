@@ -31,7 +31,7 @@ bp_analysis <- function(dataframe,type,BPThreshold,BPFinalValue){
 	
 	chartNums = unique(dataframe$`Chart.`)
 	BPReport <- data.frame(matrix(ncol = 10, nrow = 0))
-	colnames(BPReport) <- c('Chart_num','Birth_Year','First_Result_Date','First_Result_Systolic','First_Result_Diastolic','Last_Result_Date','Last_Result_Systolic','Last_Result_Diastolic','Change','Final_result_below_threshold')
+	colnames(BPReport) <- c('Chart_num','Birth_Year','BP_First_Result_Date','Systolic_First_Result','Diastolic_First_Result','BP_Last_Result_Date','Systolic_Last_Result','Diastolic_Last_Result','BP_Change','Final_result_below_threshold')
 	
 	for(chart in chartNums){
 		patient = dataframe[dataframe$`Chart.`==chart,]

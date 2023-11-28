@@ -26,7 +26,7 @@ hld_analysis <- function(dataframe,type,HLDThreshold,HLDFinalValue){
 	
 	chartNums = unique(dataframe$`Chart.`)
 	HLDReport <- data.frame(matrix(ncol = 11, nrow = 0))
-	colnames(HLDReport) <- c('Chart_num','Birth_Year','Gender','Race','Ethnicity','First_Result_Date','First_Result_Value','Last_Result_Date','Last_Result_Value','Change','Final_result_below_threshold')
+	colnames(HLDReport) <- c('Chart_num','Birth_Year','Gender','Race','Ethnicity','LDL_First_Result_Date','LDL_First_Result_Value','LDL_Last_Result_Date','LDL_Last_Result_Value','LDL_Change','Final_result_below_threshold')
 
 	for(chart in chartNums){
 		patient = dataframe[dataframe$`Chart.`==chart,]

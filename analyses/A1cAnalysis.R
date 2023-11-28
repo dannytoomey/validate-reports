@@ -26,7 +26,7 @@ a1c_analysis <- function(dataframe,type,A1cThreshold,A1cFinalValue){
 	
 	chartNums = unique(dataframe$`Chart.`)
 	A1cReport <- data.frame(matrix(ncol = 11, nrow = 0))
-	colnames(A1cReport) <- c('Chart_num','Birth_Year','Gender','Race','Ethnicity','First_Result_Date','First_Result_Value','Last_Result_Date','Last_Result_Value','Change','Final_result_below_threshold')
+	colnames(A1cReport) <- c('Chart_num','Birth_Year','Gender','Race','Ethnicity','HgA1c_First_Result_Date','HgA1c_First_Result_Value','HgA1c_Last_Result_Date','HgA1c_Last_Result_Value','HgA1c_Change','Final_result_below_threshold')
 
 	for(chart in chartNums){
 		patient = dataframe[dataframe$`Chart.`==chart,]
