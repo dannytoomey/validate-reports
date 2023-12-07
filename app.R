@@ -175,12 +175,28 @@ cz_report <- tabPanel(
         tabPanel(  
           title = "Summary statistics",
           fluidRow(
-            column(width=3,strong(textOutput("cz_bins_title"))),
-            column(width=4,tableOutput("cz_bins")),            
+            column(width=3,strong(textOutput("impr_cz_bins_title"))),
+            column(width=4,tableOutput("impr_cz_bins")),            
           ),
           fluidRow(
-            column(width=3,strong(textOutput("cz_stats_title"))),
-            column(width=4,tableOutput("cz_stats")),
+            column(width=3,strong(textOutput("impr_cz_stats_title"))),
+            column(width=4,tableOutput("impr_cz_stats")),
+          ),
+          fluidRow(
+            column(width=3,strong(textOutput("no_change_cz_bins_title"))),
+            column(width=4,tableOutput("no_change_cz_bins")),            
+          ),
+          fluidRow(
+            column(width=3,strong(textOutput("no_change_cz_stats_title"))),
+            column(width=4,tableOutput("no_change_cz_stats")),
+          ),
+          fluidRow(
+            column(width=3,strong(textOutput("worse_cz_bins_title"))),
+            column(width=4,tableOutput("worse_cz_bins")),            
+          ),
+          fluidRow(
+            column(width=3,strong(textOutput("worse_cz_stats_title"))),
+            column(width=4,tableOutput("worse_cz_stats")),
           )
         ),
         tabPanel(
@@ -840,19 +856,47 @@ server <- function(input, output, session) {
       output$cz_data <- DT::renderDataTable({
         get_cz_data(file_input)
       })
-      output$cz_bins_title <- renderText({
+      output$impr_cz_bins_title <- renderText({
         "Summary overview of improvement:"
       })
-      output$cz_bins <- renderTable({
+      output$impr_cz_bins <- renderTable({
         data <- get_cz_data(file_input)
-        cz_summary_bins(data)
+        cz_summary_bins(data,"Improved")
       })
-      output$cz_stats_title <- renderText({
+      output$impr_cz_stats_title <- renderText({
         "Relative risk and 95% CI for improvement for patients in CZ compared to patients not in CZ:"
       })
-      output$cz_stats <- renderTable({
+      output$impr_cz_stats <- renderTable({
         data <- get_cz_data(file_input)
-        cz_summary_stats(data)
+        cz_summary_stats(data,"Improved")
+      })
+      output$no_change_cz_bins_title <- renderText({
+        "Summary overview of no change:"
+      })
+      output$no_change_cz_bins <- renderTable({
+        data <- get_cz_data(file_input)
+        cz_summary_bins(data,"No change")
+      })
+      output$no_change_cz_stats_title <- renderText({
+        "Relative risk and 95% CI for no change for patients in CZ compared to patients not in CZ:"
+      })
+      output$no_change_cz_stats <- renderTable({
+        data <- get_cz_data(file_input)
+        cz_summary_stats(data,"No change")
+      })
+      output$worse_cz_bins_title <- renderText({
+        "Summary overview of worsening:"
+      })
+      output$worse_cz_bins <- renderTable({
+        data <- get_cz_data(file_input)
+        cz_summary_bins(data,"Not improved")
+      })
+      output$worse_cz_stats_title <- renderText({
+        "Relative risk and 95% CI for who worsened for patients in CZ compared to patients not in CZ:"
+      })
+      output$worse_cz_stats <- renderTable({
+        data <- get_cz_data(file_input)
+        cz_summary_stats(data,"Not improved")
       })
     }
   })
